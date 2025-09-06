@@ -85,47 +85,73 @@ export function signUp(
 
 export function login(email, password, navigate, returnTo = "/dashboard/my-profile") {
   return async (dispatch) => {
-    const toastId = toast.loading("Loading...")
+    const toastId = toast.loading("Logging in...")
     dispatch(setLoading(true))
     try {
+      console.log("Attempting login with email:", email)
+      
       const response = await apiConnector("POST", LOGIN_API, {
         email,
         password,
+      }, {
+        'Content-Type': 'application/json',
       })
 
-      console.log("LOGIN API RESPONSE............", response)
+      console.log("LOGIN API RESPONSE:", response)
 
-      if (!response.data.success) {
-        throw new Error(response.data.message)
+      if (!response.data || !response.data.success) {
+        const errorMessage = response.data?.message || 'Login failed. Please try again.'
+        console.error("Login failed:", errorMessage)
+        throw new Error(errorMessage)
       }
 
-      toast.success("Login Successful")
-      dispatch(setToken(response.data.token))
-      const userImage = response.data?.user?.image
-        ? response.data.user.image
-        : `https://api.dicebear.com/5.x/initials/svg?seed=${response.data.user.firstName} ${response.data.user.lastName}`
+      const { token, user } = response.data
+      
+      if (!token) {
+        throw new Error('No authentication token received')
+      }
+
       // Update user data in Redux and localStorage
-      const userData = { ...response.data.user, image: userImage };
-      dispatch(setUser(userData));
-      localStorage.setItem("token", JSON.stringify(response.data.token));
-      localStorage.setItem("user", JSON.stringify(userData));
+      const userImage = user?.image 
+        ? user.image 
+        : `https://api.dicebear.com/5.x/initials/svg?seed=${user.firstName || ''} ${user.lastName || ''}`
+      
+      const userData = { 
+        ...user, 
+        image: userImage 
+      }
+      
+      // Store token and user data
+      dispatch(setToken(token))
+      dispatch(setUser(userData))
+      
+      // Save to localStorage
+      localStorage.setItem("token", JSON.stringify(token))
+      localStorage.setItem("user", JSON.stringify(userData))
+      
+      toast.success("Login Successful! Redirecting...")
       
       // Fetch user's cart after successful login
       try {
-        await dispatch(fetchUserCart()).unwrap();
+        await dispatch(fetchUserCart()).unwrap()
       } catch (error) {
-        console.error("Failed to fetch user's cart:", error);
+        console.error("Failed to fetch user's cart:", error)
         // Continue with login even if cart fetch fails
       }
       
       // Navigate to the returnTo URL if provided, otherwise go to the dashboard
-      navigate(returnTo || "/dashboard/my-profile", { replace: true })
+      const redirectPath = returnTo || "/dashboard/my-profile"
+      console.log("Redirecting to:", redirectPath)
+      navigate(redirectPath, { replace: true })
+      
     } catch (error) {
-      console.log("LOGIN API ERROR............", error)
-      toast.error("Login Failed")
+      console.error("LOGIN ERROR:", error)
+      const errorMessage = error.response?.data?.message || error.message || "Login failed. Please try again."
+      toast.error(errorMessage)
+    } finally {
+      dispatch(setLoading(false))
+      toast.dismiss(toastId)
     }
-    dispatch(setLoading(false))
-    toast.dismiss(toastId)
   }
 }
 

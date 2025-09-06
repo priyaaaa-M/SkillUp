@@ -1,5 +1,7 @@
-// Import the Mongoose library
+// Import the Mongoose library and bcrypt for password hashing
 const mongoose = require("mongoose");
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 // Define the user schema using the Mongoose Schema constructor
 const userSchema = new mongoose.Schema(
@@ -99,5 +101,43 @@ const userSchema = new mongoose.Schema(
 	{ timestamps: true }
 );
 
+// Pre-save hook to hash password before saving
+userSchema.pre('save', async function(next) {
+    // Only hash the password if it has been modified (or is new)
+    if (!this.isModified('password')) return next();
+    
+    try {
+        // Generate salt
+        const salt = await bcrypt.genSalt(10);
+        // Hash the password with the salt
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Method to compare password for login
+userSchema.methods.comparePassword = async function(candidatePassword) {
+    try {
+        return await bcrypt.compare(candidatePassword, this.password);
+    } catch (error) {
+        throw new Error(error);
+    }
+};
+
+// Method to generate JWT token
+userSchema.methods.generateAuthToken = function() {
+    return jwt.sign(
+        { 
+            id: this._id,
+            email: this.email,
+            accountType: this.accountType
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '30d' }
+    );
+};
+
 // Export the Mongoose model for the user schema, using the name "user"
-module.exports = mongoose.model("user", userSchema);
+module.exports = mongoose.model("User", userSchema);

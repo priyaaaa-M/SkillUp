@@ -485,12 +485,14 @@ exports.getInstructorCourses = async (req, res) => {
 			.populate({
 				path: "studentsEnroled",
 				select: "firstName lastName email",
+				model: "User"
 			})
 			.populate({
 				path: "ratingAndReviews",
 				select: "rating review user",
 				populate: {
 					path: "user",
+					model: "User",
 					select: "firstName lastName",
 				},
 			})
