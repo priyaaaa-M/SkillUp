@@ -5,7 +5,8 @@ const SubSection = require("../models/Subsection")
 const User = require("../models/User")
 const { uploadImageToCloudinary } = require("../utils/imageUploader")
 const CourseProgress = require("../models/CourseProgress")
-//const { convertSecondsToDuration } = require("../utils/secToDuration")
+const mongoose = require("mongoose")
+const { convertSecondsToDuration } = require("../utils/secToDuration")
 // Function to create a new course
 exports.createCourse = async (req, res) => {
 	try {
@@ -211,37 +212,39 @@ exports.getAllCourses = async (req, res) => {
 				instructor: true,
 				ratingAndReviews: true,
 				studentsEnrolled: true,
+				category: true,
+				status: true,
+				description: true
 			}
 		)
-			.populate("instructor")
-			.exec()
+		.populate("instructor")
+		.populate({
+		  path: 'category',
+		  select: 'name description'
+		})
+		.exec()
 
 		return res.status(200).json({
 			success: true,
 			data: allCourses,
 		})
 	} catch (error) {
-		console.log(error)
+		console.log(error);
 		return res.status(404).json({
 			success: false,
-			message: `Can't Fetch Course Data`,
-			error: error.message,
-		})
+			message: "Can't Fetch Course Data"
+		});
 	}
-}
+};
+
 // Get One Single Course Details
 // exports.getCourseDetails = async (req, res) => {
 //   try {
-//     const { courseId } = req.body
+//     const { courseId } = req.body;
 //     const courseDetails = await Course.findOne({
 //       _id: courseId,
 //     })
-//       .populate({
-//         path: "instructor",
-//         populate: {
-//           path: "additionalDetails",
-//         },
-//       })
+//       .populate("instructor")
 //       .populate("category")
 //       .populate("ratingAndReviews")
 //       .populate({
@@ -250,26 +253,17 @@ exports.getAllCourses = async (req, res) => {
 //           path: "subSection",
 //         },
 //       })
-//       .exec()
-//     // console.log(
-//     //   "###################################### course details : ",
-//     //   courseDetails,
-//     //   courseId
-//     // );
-//     if (!courseDetails || !courseDetails.length) {
+//       .exec();
+
+//     //validation
+//     if (!courseDetails) {
 //       return res.status(400).json({
 //         success: false,
-//         message: `Could not find course with id: ${courseId}`,
-//       })
+//         message: `Could not find the course with ${courseId}`,
+//       });
 //     }
 
-//     if (courseDetails.status === "Draft") {
-//       return res.status(403).json({
-//         success: false,
-//         message: `Accessing a draft course is forbidden`,
-//       })
-//     }
-
+//     //return response
 //     return res.status(200).json({
 //       success: true,
 //       data: courseDetails,
@@ -302,6 +296,10 @@ exports.getCourseDetails = async (req, res) => {
 					select: "-videoUrl",
 				},
 			})
+			.populate({
+				path: "studentsEnroled",
+				select: "firstName lastName email image",
+			})
 			.exec()
 
 		if (!courseDetails) {
@@ -319,19 +317,29 @@ exports.getCourseDetails = async (req, res) => {
 		// }
 
 		let totalDurationInSeconds = 0
-		courseDetails.courseContent.forEach((content) => {
-			content.subSection.forEach((subSection) => {
-				const timeDurationInSeconds = parseInt(subSection.timeDuration)
-				totalDurationInSeconds += timeDurationInSeconds
+		if (courseDetails.courseContent && Array.isArray(courseDetails.courseContent)) {
+			courseDetails.courseContent.forEach((content) => {
+				if (content.subSection && Array.isArray(content.subSection)) {
+					content.subSection.forEach((subSection) => {
+						if (subSection.timeDuration) {
+							const timeDurationInSeconds = parseInt(subSection.timeDuration) || 0
+							totalDurationInSeconds += timeDurationInSeconds
+						}
+					})
+				}
 			})
-		})
+		}
 
 		const totalDuration = convertSecondsToDuration(totalDurationInSeconds)
+
+		// Add enrollment count to the response
+		const courseResponse = courseDetails.toObject();
+		courseResponse.enrollmentCount = courseResponse.studentsEnroled?.length || 0;
 
 		return res.status(200).json({
 			success: true,
 			data: {
-				courseDetails,
+				courseDetails: courseResponse,
 				totalDuration,
 			},
 		})
@@ -346,6 +354,26 @@ exports.getFullCourseDetails = async (req, res) => {
 	try {
 		const { courseId } = req.body
 		const userId = req.user.id
+		
+		console.log("Requested courseId:", courseId)
+		console.log("Requested userId:", userId)
+		
+		// Validate courseId
+		if (!courseId) {
+			return res.status(400).json({
+				success: false,
+				message: "Course ID is required",
+			})
+		}
+		
+		// Validate if courseId is a valid MongoDB ObjectId
+		if (!mongoose.Types.ObjectId.isValid(courseId)) {
+			return res.status(400).json({
+				success: false,
+				message: "Invalid course ID format",
+			})
+		}
+		
 		const courseDetails = await Course.findOne({
 			_id: courseId,
 		})
@@ -365,12 +393,30 @@ exports.getFullCourseDetails = async (req, res) => {
 			})
 			.exec()
 
+		console.log("Found course details:", courseDetails ? "Yes" : "No")
+		if (courseDetails) {
+			console.log("Course instructor ID:", courseDetails.instructor._id)
+			console.log("Requesting user ID:", userId)
+		}
+
+		// Check if user is enrolled in the course
+		const user = await User.findById(userId).populate('courses')
+		const isEnrolled = user.courses.some(course => course._id.toString() === courseId)
+
+		// If user is not the instructor and not enrolled, deny access
+		if (courseDetails.instructor._id.toString() !== userId && !isEnrolled) {
+			return res.status(403).json({
+				success: false,
+				message: "You are not enrolled in this course",
+			})
+		}
+
 		let courseProgressCount = await CourseProgress.findOne({
 			courseID: courseId,
 			userId: userId,
 		})
 
-		console.log("courseProgressCount : ", courseProgressCount)
+		console.log("courseProgressCount:", courseProgressCount)
 
 		if (!courseDetails) {
 			return res.status(400).json({
@@ -387,12 +433,18 @@ exports.getFullCourseDetails = async (req, res) => {
 		// }
 
 		let totalDurationInSeconds = 0
-		courseDetails.courseContent.forEach((content) => {
-			content.subSection.forEach((subSection) => {
-				const timeDurationInSeconds = parseInt(subSection.timeDuration)
-				totalDurationInSeconds += timeDurationInSeconds
+		if (courseDetails.courseContent && Array.isArray(courseDetails.courseContent)) {
+			courseDetails.courseContent.forEach((content) => {
+				if (content.subSection && Array.isArray(content.subSection)) {
+					content.subSection.forEach((subSection) => {
+						if (subSection.timeDuration) {
+							const timeDurationInSeconds = parseInt(subSection.timeDuration) || 0
+							totalDurationInSeconds += timeDurationInSeconds
+						}
+					})
+				}
 			})
-		})
+		}
 
 		const totalDuration = convertSecondsToDuration(totalDurationInSeconds)
 
@@ -414,21 +466,80 @@ exports.getFullCourseDetails = async (req, res) => {
 	}
 }
 
-// Get a list of Course for a given Instructor
+// Get a list of Course for a given Instructor with enrollment stats
 exports.getInstructorCourses = async (req, res) => {
 	try {
-		// Get the instructor ID from the authenticated user or request body
+		// Get the instructor ID from the authenticated user
 		const instructorId = req.user.id
 
-		// Find all courses belonging to the instructor
+		// Find all courses belonging to the instructor with populated content and enrollment data
 		const instructorCourses = await Course.find({
 			instructor: instructorId,
-		}).sort({ createdAt: -1 })
+		})
+			.populate({
+				path: "courseContent",
+				populate: {
+					path: "subSection",
+				},
+			})
+			.populate({
+				path: "studentsEnroled",
+				select: "firstName lastName email",
+			})
+			.populate({
+				path: "ratingAndReviews",
+				select: "rating review user",
+				populate: {
+					path: "user",
+					select: "firstName lastName",
+				},
+			})
+			.sort({ createdAt: -1 })
 
-		// Return the instructor's courses
+		// Calculate duration and statistics for each course
+		const coursesWithStats = instructorCourses.map(course => {
+			let totalDurationInSeconds = 0
+			let totalRatings = 0
+			let averageRating = 0
+			
+			// Calculate total duration
+			if (course.courseContent && Array.isArray(course.courseContent)) {
+				course.courseContent.forEach((content) => {
+					if (content.subSection && Array.isArray(content.subSection)) {
+						content.subSection.forEach((subSection) => {
+							if (subSection.timeDuration) {
+								const timeDurationInSeconds = parseInt(subSection.timeDuration) || 0
+								totalDurationInSeconds += timeDurationInSeconds
+							}
+						})
+					}
+				})
+			}
+
+			// Calculate average rating
+			if (course.ratingAndReviews && course.ratingAndReviews.length > 0) {
+				totalRatings = course.ratingAndReviews.length
+				const sumRatings = course.ratingAndReviews.reduce((sum, review) => sum + review.rating, 0)
+				averageRating = sumRatings / totalRatings
+			}
+
+			// Get enrollment count (using the pre-calculated field or fallback to array length)
+			const enrollmentCount = course.enrollmentCount || (course.studentsEnroled ? course.studentsEnroled.length : 0)
+
+			// Convert to plain object and add calculated fields
+			const courseObj = course.toObject()
+			courseObj.totalDuration = convertSecondsToDuration(totalDurationInSeconds)
+			courseObj.enrollmentCount = enrollmentCount
+			courseObj.averageRating = parseFloat(averageRating.toFixed(1))
+			courseObj.totalRatings = totalRatings
+			
+			return courseObj
+		})
+
+		// Return the instructor's courses with stats
 		res.status(200).json({
 			success: true,
-			data: instructorCourses,
+			data: coursesWithStats,
 		})
 	} catch (error) {
 		console.error(error)
@@ -439,6 +550,197 @@ exports.getInstructorCourses = async (req, res) => {
 		})
 	}
 }
+// Get most popular courses
+exports.getPopularCourses = async (req, res) => {
+  try {
+    const { limit = 10 } = req.query;
+    
+    const courses = await Course.find({ status: 'Published' })
+      .sort({ enrollmentCount: -1 })
+      .limit(parseInt(limit))
+      .populate('instructor', 'firstName lastName')
+      .populate('category', 'name');
+
+    return res.status(200).json({
+      success: true,
+      data: courses,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch popular courses',
+      error: error.message,
+    });
+  }
+};
+
+// Get newest courses
+exports.getNewCourses = async (req, res) => {
+  try {
+    const { limit = 10 } = req.query;
+    
+    const courses = await Course.find({ status: 'Published' })
+      .sort({ publishedAt: -1 })
+      .limit(parseInt(limit))
+      .populate('instructor', 'firstName lastName')
+      .populate('category', 'name');
+
+    return res.status(200).json({
+      success: true,
+      data: courses,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch new courses',
+      error: error.message,
+    });
+  }
+};
+
+// Get top courses by category
+exports.getTopCoursesByCategory = async (req, res) => {
+  try {
+    const { categoryId, limit = 5 } = req.query;
+    
+    if (!categoryId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category ID is required',
+      });
+    }
+
+    const courses = await Course.aggregate([
+      { $match: { category: new mongoose.Types.ObjectId(categoryId), status: 'Published' } },
+      { 
+        $addFields: { 
+          score: { 
+            $add: [
+              { $multiply: ["$ratingAndCount.averageRating", 0.7] },
+              { $multiply: ["$enrollmentCount", 0.3] }
+            ]
+          }
+        }
+      },
+      { $sort: { score: -1 } },
+      { $limit: parseInt(limit) },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'instructor',
+          foreignField: '_id',
+          as: 'instructor',
+        },
+      },
+      { $unwind: '$instructor' },
+      {
+        $project: {
+          'instructor.password': 0,
+          'instructor.token': 0,
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: courses,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch top courses by category',
+      error: error.message,
+    });
+  }
+};
+
+// Get frequently bought together courses
+exports.getFrequentlyBoughtTogether = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { limit = 3 } = req.query;
+
+    if (!courseId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Course ID is required',
+      });
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    // Sort by count and get top N
+    const frequentlyBought = course.purchasedWith
+      .sort((a, b) => b.count - a.count)
+      .slice(0, parseInt(limit));
+
+    // Get full course details
+    const courseIds = frequentlyBought.map(item => item.courseId);
+    const courses = await Course.find({
+      _id: { $in: courseIds },
+      status: 'Published'
+    })
+    .populate('instructor', 'firstName lastName')
+    .populate('category', 'name');
+
+    return res.status(200).json({
+      success: true,
+      data: courses,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch frequently bought together courses',
+      error: error.message,
+    });
+  }
+};
+
+// Update purchasedWith when courses are bought together
+exports.updatePurchasedTogether = async (courseIds) => {
+  try {
+    // For each pair of courses in the purchase, update their purchasedWith arrays
+    for (let i = 0; i < courseIds.length; i++) {
+      for (let j = i + 1; j < courseIds.length; j++) {
+        const course1 = courseIds[i];
+        const course2 = courseIds[j];
+
+        // Update course1's purchasedWith for course2
+        await Course.updateOne(
+          { _id: course1, 'purchasedWith.courseId': { $ne: course2 } },
+          { $push: { purchasedWith: { courseId: course2 } } }
+        );
+
+        // Update count if already exists
+        await Course.updateOne(
+          { _id: course1, 'purchasedWith.courseId': course2 },
+          { $inc: { 'purchasedWith.$.count': 1 } }
+        );
+
+        // Update course2's purchasedWith for course1
+        await Course.updateOne(
+          { _id: course2, 'purchasedWith.courseId': { $ne: course1 } },
+          { $push: { purchasedWith: { courseId: course1 } } }
+        );
+
+        // Update count if already exists
+        await Course.updateOne(
+          { _id: course2, 'purchasedWith.courseId': course1 },
+          { $inc: { 'purchasedWith.$.count': 1 } }
+        );
+      }
+    }
+  } catch (error) {
+    console.error('Error updating purchased together:', error);
+  }
+};
+
 // Delete the Course
 exports.deleteCourse = async (req, res) => {
 	try {
