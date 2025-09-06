@@ -13,6 +13,11 @@ const {
   editCourse,
   getInstructorCourses,
   deleteCourse,
+  getPopularCourses,
+  getNewCourses,
+  getTopCoursesByCategory,
+  getFrequentlyBoughtTogether,
+  updatePurchasedTogether
 } = require("../controllers/Course")
 
 // Tags Controllers Import
@@ -36,14 +41,15 @@ const {
   createSubSection,
   updateSubSection,
   deleteSubSection,
-} = require("../controllers/Subsection")
+} = require("../controllers/SubSection")
 
 // Rating Controllers Import
 const {
   createRating,
   getAverageRating,
   getAllRatingReview,
-} = require("../controllers/RatingandReview")
+  getAllReviews
+} = require("../controllers/RatingandReview");
 const {
   updateCourseProgress,
   getProgressPercentage,
@@ -84,7 +90,30 @@ router.post("/updateCourseProgress", auth, isStudent, updateCourseProgress)
 // To get Course Progress
 // router.post("/getProgressPercentage", auth, isStudent, getProgressPercentage)
 // Delete a Course
-router.delete("/deleteCourse", deleteCourse)
+router.delete("/deleteCourse", auth, isInstructor, deleteCourse)
+
+// Get popular courses
+router.get("/popular", getPopularCourses);
+
+// Get new courses
+router.get("/new", getNewCourses);
+
+// Get top courses by category
+router.get("/top-by-category", getTopCoursesByCategory);
+
+// Get frequently bought together courses
+router.get("/frequently-bought/:courseId", getFrequentlyBoughtTogether);
+
+// Update purchased together (internal use)
+router.post("/update-purchased-together", auth, isAdmin, async (req, res) => {
+  try {
+    const { courseIds } = req.body;
+    await updatePurchasedTogether(courseIds);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // ********************************************************************************************************
 //                                      Category routes (Only by Admin)
@@ -93,13 +122,17 @@ router.delete("/deleteCourse", deleteCourse)
 // TODO: Put IsAdmin Middleware here
 router.post("/createCategory", auth, isAdmin, createCategory)
 router.get("/showAllCategories", showAllCategories)
-router.post("/getCategoryPageDetails", categoryPageDetails)
+// Handle both GET and POST for category page details
+router.route("/getCategoryPageDetails")
+  .get(categoryPageDetails)
+  .post(categoryPageDetails)
 
 // ********************************************************************************************************
 //                                      Rating and Review
 // ********************************************************************************************************
-router.post("/createRating", auth, isStudent, createRating)
-router.get("/getAverageRating", getAverageRating)
-//router.get("/getReviews", getAllRatingReview)
- 
+router.post("/createRating", auth, isStudent, createRating);
+router.get("/getAverageRating", getAverageRating);
+router.get("/getAllReviews", getAllReviews);
+//router.get("/getReviews", getAllRatingReview);
+
 module.exports = router
