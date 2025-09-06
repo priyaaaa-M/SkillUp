@@ -5,7 +5,7 @@ import LoginForm from "./LoginForm";
 import SignupForm from "./SignupForm";
 import BeatLoader from "react-spinners/BeatLoader";
 
-function Template({ title, description1, description2, image, formType }) {
+function Template({ title, description1, description2, image, formType, returnTo }) {
   const { loading } = useSelector((state) => state.auth)
 
   return (
@@ -24,7 +24,7 @@ function Template({ title, description1, description2, image, formType }) {
                 {description2}
               </span>
             </p>
-            {formType === "signup" ? <SignupForm /> : <LoginForm />}
+            {formType === "signup" ? <SignupForm /> : <LoginForm returnTo={returnTo} />}
           </div>
           <div className="relative mx-auto w-11/12 max-w-[450px] md:mx-0">
             <img

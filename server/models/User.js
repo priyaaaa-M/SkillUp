@@ -46,12 +46,37 @@ const userSchema = new mongoose.Schema(
 			required: true,
 			ref: "Profile",
 		},
+		cart: [
+			{
+				type: mongoose.Schema.Types.ObjectId,
+				ref: "Course",
+			},
+		],
 		courses: [
 			{
 				type: mongoose.Schema.Types.ObjectId,
 				ref: "Course",
 			},
 		],
+		abandonedCart: {
+			items: [
+				{
+					courseId: {
+						type: mongoose.Schema.Types.ObjectId,
+						ref: "Course",
+					},
+					courseName: String,
+					price: Number,
+					thumbnail: String,
+					addedAt: Date,
+				},
+			],
+			lastUpdated: Date,
+			reminderSent: {
+				type: Boolean,
+				default: false,
+			},
+		},
 		token: {
 			type: String,
 		},

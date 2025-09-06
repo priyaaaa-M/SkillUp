@@ -32,7 +32,7 @@ const InstructorSection = () => {
             </h2>
 
             <p className='text-base md:text-lg text-richblack-600 leading-relaxed'>
-              Instructors from around the world teach millions of students on StudyNotion.
+              Instructors from around the world teach millions of students on SkillUp.
               We provide the tools and skills to teach what you love.
             </p>
 

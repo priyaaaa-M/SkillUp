@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 const profileSchema = new mongoose.Schema({
 	gender: {
 		type: String,
-
 	},
 	dateOfBirth: {
 		type: String,
@@ -17,6 +16,18 @@ const profileSchema = new mongoose.Schema({
 		type: Number,
 		trim: true,
 	},
+	coursesEnrolled: [
+		{
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Course",
+		}
+	],
+	coursesInProgress: [
+		{
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Course",
+		}
+	],
 });
 
 // Export the Profile model

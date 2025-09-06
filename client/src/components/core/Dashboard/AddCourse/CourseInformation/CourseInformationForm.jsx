@@ -54,7 +54,8 @@ export default function CourseInformationForm() {
       setValue("coursePrice", course.price)
       setValue("courseTags", course.tag)
       setValue("courseBenefits", course.whatYouWillLearn)
-      setValue("courseCategory", course.category)
+      setValue("courseCategory", course.category._id)
+
       setValue("courseRequirements", course.instructions)
       setValue("courseImage", course.thumbnail)
     }
@@ -63,16 +64,25 @@ export default function CourseInformationForm() {
 
   const isFormUpdated = () => {
     const currentValues = getValues()
+    
+    // Get the category ID from the form or the course object
+    const currentCategoryId = typeof currentValues.courseCategory === 'object' 
+      ? currentValues.courseCategory._id 
+      : currentValues.courseCategory;
+      
+    const originalCategoryId = typeof course.category === 'object'
+      ? course.category._id
+      : course.category;
+
     if (
       currentValues.courseTitle !== course.courseName ||
       currentValues.courseShortDesc !== course.courseDescription ||
       currentValues.coursePrice !== course.price ||
-      currentValues.courseTags.toString() !== course.tag.toString() ||
+      JSON.stringify(currentValues.courseTags) !== JSON.stringify(course.tag || []) ||
       currentValues.courseBenefits !== course.whatYouWillLearn ||
-      currentValues.courseCategory._id !== course.category._id ||
-      currentValues.courseRequirements.toString() !==
-      course.instructions.toString() ||
-      currentValues.courseImage !== course.thumbnail
+      currentCategoryId !== originalCategoryId ||
+      JSON.stringify(currentValues.courseRequirements) !== JSON.stringify(course.instructions || []) ||
+      (currentValues.courseImage instanceof File || currentValues.courseImage !== course.thumbnail)
     ) {
       return true
     }
@@ -84,39 +94,55 @@ export default function CourseInformationForm() {
       if (isFormUpdated()) {
         const currentValues = getValues()
         const formData = new FormData()
+        
+        // Always include courseId
         formData.append("courseId", course._id)
-        if (currentValues.courseTitle !== course.courseName) {
-          formData.append("courseName", data.courseTitle)
+        
+        // Add all fields to form data
+        formData.append("courseName", data.courseTitle || course.courseName)
+        formData.append("courseDescription", data.courseShortDesc || course.courseDescription)
+        formData.append("price", data.coursePrice || course.price)
+        formData.append("whatYouWillLearn", data.courseBenefits || course.whatYouWillLearn)
+        
+        // Handle category - get the ID if it's an object
+        const currentCategory = data.courseCategory;
+        const originalCategory = course.category;
+        
+        // Get the category ID from current and original values
+        const currentCategoryId = currentCategory && typeof currentCategory === 'object' 
+          ? currentCategory._id 
+          : currentCategory;
+          
+        const originalCategoryId = originalCategory && typeof originalCategory === 'object'
+          ? originalCategory._id
+          : originalCategory;
+        
+        // Only append category if it's different from the original
+        if (currentCategoryId && currentCategoryId !== originalCategoryId) {
+          formData.append("category", currentCategoryId);
         }
-        if (currentValues.courseShortDesc !== course.courseDescription) {
-          formData.append("courseDescription", data.courseShortDesc)
+        
+        // Handle tags if they've changed
+        const currentTags = data.courseTags || [];
+        const originalTags = course.tag || [];
+        
+        if (JSON.stringify(currentTags) !== JSON.stringify(originalTags)) {
+          formData.append("tag", JSON.stringify(currentTags));
         }
-        if (currentValues.coursePrice !== course.price) {
-          formData.append("price", data.coursePrice)
+        // Handle course requirements/instructions if they've changed
+        const currentRequirements = data.courseRequirements || [];
+        const originalRequirements = course.instructions || [];
+        
+        if (JSON.stringify(currentRequirements) !== JSON.stringify(originalRequirements)) {
+          formData.append("instructions", JSON.stringify(currentRequirements));
         }
-        if (currentValues.courseTags.toString() !== course.tag.toString()) {
-          formData.append("tag", JSON.stringify(data.courseTags))
-
-        }
-        if (currentValues.courseBenefits !== course.whatYouWillLearn) {
-          formData.append("whatYouWillLearn", data.courseBenefits)
-        }
-        if (currentValues.courseCategory._id !== course.category._id) {
-          formData.append("category", data.courseCategory)
-        }
-        if (
-          currentValues.courseRequirements.toString() !==
-          course.instructions.toString()
-        ) {
-          formData.append(
-            "instructions",
-            JSON.stringify(data.courseRequirements)
-          )
-        }
-        if (currentValues.courseImage !== course.thumbnail) {
-
-          formData.append("thumbnailImage", data.courseImage)
-
+        // Handle thumbnail image if it's been changed
+        const currentImage = data.courseImage;
+        const originalImage = course.thumbnail;
+        
+        // If currentImage is a File object or the URL has changed
+        if (currentImage instanceof File || currentImage !== originalImage) {
+          formData.append("thumbnailImage", currentImage);
         }
         setLoading(true)
         const result = await editCourseDetails(formData, token)

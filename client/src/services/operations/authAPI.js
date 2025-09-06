@@ -1,13 +1,10 @@
 import { toast } from "react-hot-toast"
 
 import { setLoading, setToken } from "../../slices/authSlice"
-import { resetCart } from "../../slices/cartSlice"
+import { clearCart, fetchUserCart, resetCart } from "../../slices/cartSlice"
 import { setUser } from "../../slices/profileSlice"
-import { apiConnector } from "../apiconnector"
+import { apiConnector } from "../apiConnector"
 import { endpoints } from "../apis"
-
-
-
 
 const {
   SENDOTP_API,
@@ -86,7 +83,7 @@ export function signUp(
   }
 }
 
-export function login(email, password, navigate) {
+export function login(email, password, navigate, returnTo = "/dashboard/my-profile") {
   return async (dispatch) => {
     const toastId = toast.loading("Loading...")
     dispatch(setLoading(true))
@@ -107,10 +104,22 @@ export function login(email, password, navigate) {
       const userImage = response.data?.user?.image
         ? response.data.user.image
         : `https://api.dicebear.com/5.x/initials/svg?seed=${response.data.user.firstName} ${response.data.user.lastName}`
-      dispatch(setUser({ ...response.data.user, image: userImage }))
-      localStorage.setItem("token", JSON.stringify(response.data.token))
-      localStorage.setItem("user", JSON.stringify(response.data.user))
-      navigate("/dashboard/my-profile")
+      // Update user data in Redux and localStorage
+      const userData = { ...response.data.user, image: userImage };
+      dispatch(setUser(userData));
+      localStorage.setItem("token", JSON.stringify(response.data.token));
+      localStorage.setItem("user", JSON.stringify(userData));
+      
+      // Fetch user's cart after successful login
+      try {
+        await dispatch(fetchUserCart()).unwrap();
+      } catch (error) {
+        console.error("Failed to fetch user's cart:", error);
+        // Continue with login even if cart fetch fails
+      }
+      
+      // Navigate to the returnTo URL if provided, otherwise go to the dashboard
+      navigate(returnTo || "/dashboard/my-profile", { replace: true })
     } catch (error) {
       console.log("LOGIN API ERROR............", error)
       toast.error("Login Failed")
@@ -121,16 +130,16 @@ export function login(email, password, navigate) {
 }
 
 
-export function logout(navigate) {
+export const logout = (navigate) => {
   return (dispatch) => {
-    dispatch(setToken(null));
-    dispatch(setUser(null));
-    dispatch(resetCart());
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    toast.success("Logged Out");
-    navigate("/");
-  };
+    dispatch(setToken(null))
+    dispatch(setUser(null))
+    dispatch(resetCart())
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
+    toast.success("Logged Out")
+    navigate("/")
+  }
 }
 
 

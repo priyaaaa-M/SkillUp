@@ -12,7 +12,7 @@ const {
 } = settingsEndpoints
 
 export function updateDisplayPicture(token, formData) {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
     const toastId = toast.loading("Loading...")
     try {
       const response = await apiConnector(
@@ -30,11 +30,16 @@ export function updateDisplayPicture(token, formData) {
         throw new Error(response.data.message)
       }
 
-      // ✅ Update Redux
-      dispatch(setUser(response.data.data))
+      // ✅ Preserve existing user fields and only update image
+      const prevUser = getState()?.profile?.user || {}
+      const serverUser = response.data.data || {}
+      // Only update the image; keep all existing fields intact
+      const newImage = serverUser.image || serverUser?.data?.image || serverUser?.secure_url || prevUser.image
+      const updatedUser = { ...prevUser, image: newImage }
 
-      // ✅ Update localStorage (so refresh ke baad bhi naya image mile)
-      localStorage.setItem("user", JSON.stringify(response.data.data))
+      // ✅ Update Redux & localStorage
+      dispatch(setUser(updatedUser))
+      localStorage.setItem("user", JSON.stringify(updatedUser))
 
       toast.success("Display Picture Updated Successfully")
     } catch (error) {
@@ -50,46 +55,57 @@ export function updateDisplayPicture(token, formData) {
 
 export function updateProfile(token, formData) {
   return async (dispatch) => {
-    const toastId = toast.loading("Loading...")
+    const toastId = toast.loading("Updating profile...")
     try {
+      console.log("Sending profile update request:", formData);
       const response = await apiConnector("PUT", UPDATE_PROFILE_API, formData, {
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       })
       console.log("UPDATE_PROFILE_API API RESPONSE............", response)
 
       if (!response.data.success) {
-        throw new Error(response.data.message)
+        throw new Error(response.data.message || "Failed to update profile")
       }
 
-      const userDetails = response.data.userDetails
-      const profile = response.data.profile
+      // The server should return updatedUserDetails with the profile populated
+      const updatedUserDetails = response.data.updatedUserDetails;
+      
+      if (!updatedUserDetails) {
+        throw new Error("No user details returned from server");
+      }
 
-      // final user object ready for redux
+      // Format the user object for Redux
       const updatedUser = {
-        ...userDetails,
-        image: userDetails.image
-          ? userDetails.image
-          : `https://api.dicebear.com/5.x/initials/svg?seed=${userDetails.firstName} ${userDetails.lastName}`,
+        ...updatedUserDetails,
+        image: updatedUserDetails.image || 
+          `https://api.dicebear.com/5.x/initials/svg?seed=${updatedUserDetails.firstName} ${updatedUserDetails.lastName}`,
         additionalDetails: {
-          about: profile?.about,
-          gender: profile?.gender,
-          dateOfBirth: profile?.dateOfBirth,
-          contactNumber: profile?.contactNumber,
+          about: updatedUserDetails.additionalDetails?.about || "",
+          gender: updatedUserDetails.additionalDetails?.gender || "",
+          dateOfBirth: updatedUserDetails.additionalDetails?.dateOfBirth || "",
+          contactNumber: updatedUserDetails.additionalDetails?.contactNumber || "",
         },
       }
 
-      // save in redux + localStorage
-      dispatch(setUser(updatedUser))
-      localStorage.setItem("user", JSON.stringify(updatedUser))
-
-      console.log("Dispatched user object:", updatedUser)
-      toast.success("Profile Updated Successfully")
+      console.log("Updated user object for Redux:", updatedUser);
+      
+      // Update Redux store and localStorage
+      dispatch(setUser(updatedUser));
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      
+      toast.success("Profile updated successfully!");
+      return { success: true };
+      
     } catch (error) {
-      console.log("UPDATE_PROFILE_API API ERROR............", error)
-      toast.error("Could Not Update Profile")
+      console.error("UPDATE_PROFILE_API ERROR:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to update profile";
+      toast.error(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      toast.dismiss(toastId);
     }
-    toast.dismiss(toastId)
-  }
+  };
 }
 
 

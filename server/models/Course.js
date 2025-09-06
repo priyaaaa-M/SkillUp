@@ -2,8 +2,26 @@ const mongoose = require("mongoose")
 
 // Define the Courses schema
 const coursesSchema = new mongoose.Schema({
-	courseName: { type: String },
-	courseDescription: { type: String },
+	courseName: { type: String, required: true },
+	courseDescription: { type: String, required: true },
+	status: {
+		type: String,
+		enum: ["Draft", "Published"],
+		default: "Draft"
+	},
+	publishedAt: { 
+		type: Date, 
+		default: Date.now 
+	},
+	ratingAndCount: {
+		averageRating: { type: Number, default: 0 },
+		totalRatings: { type: Number, default: 0 }
+	},
+	enrollmentCount: { type: Number, default: 0 },
+	purchasedWith: [{
+		courseId: { type: mongoose.Schema.Types.ObjectId, ref: "Course" },
+		count: { type: Number, default: 1 }
+	}],
 	instructor: {
 		type: mongoose.Schema.Types.ObjectId,
 		required: true,
@@ -29,10 +47,6 @@ const coursesSchema = new mongoose.Schema({
 	},
 	thumbnail: {
 		type: String,
-	},
-	tag: {
-		type: [String],
-		required: true,
 	},
 	category: {
 		type: mongoose.Schema.Types.ObjectId,

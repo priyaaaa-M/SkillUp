@@ -3,12 +3,13 @@ import { FaArrowRight } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import HighlightText from '../components/core/HomePage/HighlightText';
 import CTAButton from "../components/core/HomePage/Button";
-import Banner from "../../../assets/Images/banner.mp4";
+import Banner from "../../../assets/images/banner.mp4";
 import CodeBlocks from "../components/core/HomePage/CodeBlocks";
 import TimelineSection from '../components/core/HomePage/TimelineSection';
 import LearningLanguageSection from '../components/core/HomePage/LearningLanguageSection';
-import InstructorSection from '../components/core/HomePage/InstructorSection';
-import Footer from '../components/common/Footer';
+import InstructorSection from "../components/core/HomePage/InstructorSection";
+import ReviewSlider from "../components/common/ReviewSlider";
+import Footer from "../components/common/Footer";
 import ExploreMore from '../components/core/HomePage/ExploreMore';
 
 const Home = () => {
@@ -51,14 +52,19 @@ const Home = () => {
                 </div>
 
                 {/* Banner Video */}
-                <div className="mx-auto my-12 rounded-xl overflow-hidden shadow-2xl shadow-blue-300/30 w-full max-w-6xl">
+                <div className="mx-auto my-12 rounded-xl overflow-hidden shadow-2xl shadow-blue-300/30 w-full max-w-4xl">
                     <video
                         muted
                         loop
                         autoPlay
+                        playsInline
                         className="w-full h-auto"
+                        onError={(e) => console.error("Video failed to load:", e)}
+                        onLoadStart={() => console.log("Video loading started")}
+                        onCanPlay={() => console.log("Video can play")}
                     >
                         <source src={Banner} type="video/mp4" />
+                        Your browser does not support the video tag.
                     </video>
                 </div>
 
@@ -144,7 +150,7 @@ const Home = () => {
                         </div>
                         <div className="lg:w-1/2 flex flex-col gap-6">
                             <p className="text-lg text-richblack-600 leading-relaxed">
-                                The modern StudyNotion dictates its own terms. Today, to be a competitive
+                                The modern SkillUp platform dictates its own terms. Today, to be a competitive
                                 specialist requires more than professional skills.
                             </p>
                             <CTAButton active={true} linkto="/signup">
@@ -162,8 +168,10 @@ const Home = () => {
 
             <InstructorSection />
 
-            <h2 className='justify-center text-white '> Reviews From Our Learner</h2>
-
+            <div className="py-12 bg-richblack-900">
+              
+              <ReviewSlider  />
+            </div>
 
             <Footer />
         </div>

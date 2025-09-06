@@ -21,7 +21,7 @@ const About = () => {
                         <HighlightText text={"Brighter Future"} />
                     </h1>
                     <p className="mt-4 text-richblack-200 text-lg">
-                        Studynotion is at the forefront of driving innovation in online
+                        SkillUp is at the forefront of driving innovation in online
                         education. We're passionate about creating a brighter future by
                         offering cutting-edge courses, leveraging emerging technologies, and
                         nurturing a vibrant learning community.
@@ -164,17 +164,13 @@ const About = () => {
                 <ContactFormSection />
             </section>
 
-            <section>
+          
 
 
-                <div>
-                    Review from other learners
-                    {/* Review section */}
-
-                </div>
+              
 
 
-            </section>
+       
 
             <div>
 

@@ -2,8 +2,123 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global Layout Fixes */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
 
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 8px;
+}
 
+::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+/* Global Layout Fixes */
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #475569 #0a0a0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #475569; /* slate-600 */
+  border-radius: 9px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b; /* slate-500 */
+  border-width: 3px;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #475569 #0a0a0a;
+}
+
+/* Responsive scrollbar size */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Swiper buttons */
+.swiper-button-prev,
+.swiper-button-next {
+  @apply w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm shadow-md text-richblack-900 flex items-center justify-center hover:bg-white transition-all duration-200;
+  --swiper-navigation-size: 20px;
+  --swiper-navigation-top-offset: 50%;
+  --swiper-navigation-sides-offset: 10px;
+  --swiper-navigation-color: #1e293b;
+}
+
+.swiper-button-prev:after,
+.swiper-button-next:after {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.swiper-button-prev {
+  left: 10px;
+}
+.swiper-button-next {
+  right: 10px;
+}
+
+@media (max-width: 768px) {
+  .swiper-button-prev,
+  .swiper-button-next {
+    display: none;
+  }
+}
+
+/* Animations */
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-20px); }
@@ -16,7 +131,50 @@
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
 .animate-fadeIn {
   animation: fadeIn 0.2s ease-out;
+}
+
+/* Video Player Styles */
+.video-react {
+  position: relative;
+  padding-top: 56.25%; /* 16:9 Aspect Ratio */
+  height: 0;
+  overflow: hidden;
+}
+
+.video-react-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.video-completion-overlay {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  z-index: 1000 !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
+}
+
+.video-completion-overlay button {
+  z-index: 1001 !important;
+  position: relative !important;
+}
+
+.video-react .video-react-big-play-button {
+  z-index: 2 !important;
+}
+
+.video-react .video-react-control-bar {
+  z-index: 3 !important;
 }

@@ -2,44 +2,80 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const User = require("../models/User");
 
-//auth
+// Auth middleware
 exports.auth = async (req, res, next) => {
     try {
-        //extract token
-        const token = req.cookies.token
-            || req.body.token
-            || req.header("Authorization")?.replace("Bearer ", "");
+        // Extract token from various possible locations
+        const token = req.cookies.token ||
+                     req.body.token ||
+                     req.header("Authorization")?.replace("Bearer ", "");
 
-        //if token missing, then return response
+        console.log('Auth middleware - Token:', token ? 'Token found' : 'No token found');
+
+        // If token is missing, return error
         if (!token) {
+            console.error('No token provided in request');
             return res.status(401).json({
                 success: false,
-                message: 'TOken is missing',
+                message: 'Token is required for authentication',
             });
         }
 
-        //verify the token
+        // Verify the token
+        let decoded;
         try {
-            const decode = jwt.verify(token, process.env.JWT_SECRET);
-            console.log(decode);
-            req.user = decode;
-        }
-        catch (err) {
-            //verification - issue
+            decoded = jwt.verify(token, process.env.JWT_SECRET);
+            console.log('Token decoded successfully:', decoded);
+        } catch (err) {
+            console.error('Token verification failed:', err);
             return res.status(401).json({
                 success: false,
-                message: 'token is invalid',
+                message: 'Invalid or expired token',
+                error: err.message
             });
         }
-        next();
-    }
-    catch (error) {
-        return res.status(401).json({
+
+        // Fetch the complete user from database
+        try {
+            const user = await User.findById(decoded.id).select('-password');
+            
+            if (!user) {
+                console.error('User not found for token');
+                return res.status(401).json({
+                    success: false,
+                    message: 'User not found',
+                });
+            }
+
+            // Attach the complete user object to the request
+            req.user = {
+                id: user._id,
+                email: user.email,
+                accountType: user.accountType,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                // Add any other user fields you need
+            };
+            
+            console.log('User authenticated:', { id: user._id, email: user.email });
+            next();
+        } catch (error) {
+            console.error('Error fetching user:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Error authenticating user',
+                error: error.message
+            });
+        }
+    } catch (error) {
+        console.error('Auth middleware error:', error);
+        return res.status(500).json({
             success: false,
-            message: 'Something went wrong while validating the token',
+            message: 'Authentication failed',
+            error: error.message
         });
     }
-}
+};
 
 //isStudent
 exports.isStudent = async (req, res, next) => {

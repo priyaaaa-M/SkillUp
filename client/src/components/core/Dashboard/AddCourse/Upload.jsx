@@ -21,6 +21,7 @@ export default function Upload({
     viewData ? viewData : editData ? editData : ""
   )
   const [isHovered, setIsHovered] = useState(false)
+  const [videoError, setVideoError] = useState(false)
 
   // Dropzone config
   const onDrop = (acceptedFiles) => {
@@ -28,28 +29,36 @@ export default function Upload({
     if (file) {
       previewFile(file)
       setSelectedFile(file)
+      setVideoError(false) // Reset error state
     }
   }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: video
-      ? { "video/*": [".mp4"] }
+      ? { "video/*": [".mp4", ".avi", ".mov", ".wmv"] }
       : { "image/*": [".jpeg", ".jpg", ".png"] },
     onDrop,
   })
 
   // Preview file
   const previewFile = (file) => {
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
-    reader.onloadend = () => {
-      setPreviewSource(reader.result)
+    if (video) {
+      // For video files, create object URL instead of data URL
+      const videoUrl = URL.createObjectURL(file)
+      setPreviewSource(videoUrl)
+    } else {
+      // For image files, use FileReader
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onloadend = () => {
+        setPreviewSource(reader.result)
+      }
     }
   }
 
   // Register only once
   useEffect(() => {
-    register(name, { required: !viewData }) // agar viewData h (sirf dekhna h), to required false
+    register(name, { required: !viewData })
   }, [register, name, viewData])
 
   // Set form value when file changes
@@ -57,11 +66,30 @@ export default function Upload({
     setValue(name, selectedFile)
   }, [selectedFile, setValue, name])
 
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (video && previewSource && previewSource.startsWith('blob:')) {
+        URL.revokeObjectURL(previewSource)
+      }
+    }
+  }, [video, previewSource])
+
   // Cancel/remove file
   const handleCancel = () => {
+    if (video && previewSource && previewSource.startsWith('blob:')) {
+      URL.revokeObjectURL(previewSource)
+    }
     setPreviewSource("")
     setSelectedFile(null)
     setValue(name, null)
+    setVideoError(false)
+  }
+
+  // Handle video error
+  const handleVideoError = () => {
+    setVideoError(true)
+    console.error("Video failed to load:", previewSource)
   }
 
   return (
@@ -118,7 +146,28 @@ export default function Upload({
             ) : (
               <div className="relative h-full w-full">
                 <div className="h-full w-full rounded-xl overflow-hidden">
-                  <Player aspectRatio="16:9" playsInline src={previewSource} />
+                  {videoError ? (
+                    <div className="flex items-center justify-center h-full bg-richblack-800 text-richblack-300">
+                      <div className="text-center">
+                        <p className="text-sm text-pink-400 mb-2">Video failed to load</p>
+                        <button
+                          onClick={handleCancel}
+                          className="px-3 py-1 bg-pink-500 text-white rounded text-xs hover:bg-pink-600"
+                        >
+                          Try Again
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Player 
+                      aspectRatio="16:9" 
+                      playsInline 
+                      src={previewSource}
+                      onError={handleVideoError}
+                      fluid={true}
+                      preload="metadata"
+                    />
+                  )}
                 </div>
                 {!viewData && (
                   <div
@@ -162,7 +211,7 @@ export default function Upload({
                   to browse a file
                 </p>
                 <p className="mt-4 text-xs text-richblack-400">
-                  {video ? "MP4" : "JPEG, JPG, PNG"} files are supported
+                  {video ? "MP4, AVI, MOV, WMV" : "JPEG, JPG, PNG"} files are supported
                 </p>
               </>
             )}
@@ -208,17 +257,14 @@ export default function Upload({
       {errors[name] && (
         <div className="flex items-center text-pink-400 text-sm font-medium mt-1">
           <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4 mr-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+            className="mr-1 h-3 w-3"
+            fill="currentColor"
+            viewBox="0 0 20 20"
           >
             <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clipRule="evenodd"
             />
           </svg>
           {label} is required

@@ -1,11 +1,15 @@
 import { toast } from "react-hot-toast"
 
 import { setLoading, setUser } from "../../slices/profileSlice"
-import { apiConnector } from "../apiconnector"
+import { apiConnector } from "../apiConnector"
 import { profileEndpoints } from "../apis"
 import { logout } from "./authAPI"
 
-const { GET_USER_DETAILS_API, GET_USER_ENROLLED_COURSES_API } = profileEndpoints
+const { 
+  GET_USER_DETAILS_API, 
+  GET_USER_ENROLLED_COURSES_API, 
+  GET_INSTRUCTOR_DASHBOARD_API 
+} = profileEndpoints
 
 export function getUserDetails(token, navigate) {
   return async (dispatch) => {
@@ -63,4 +67,36 @@ export async function getUserEnrolledCourses(token) {
   }
   toast.dismiss(toastId)
   return result
+}
+
+export async function getInstructorDashboardData(token) {
+  let result = []
+  try {
+    console.log("Fetching instructor dashboard data...")
+    const response = await apiConnector("GET", GET_INSTRUCTOR_DASHBOARD_API, null, {
+      Authorization: `Bearer ${token}`,
+    })
+    
+    console.log("Instructor dashboard response:", response)
+    
+    if (!response.data) {
+      throw new Error("No data received from server")
+    }
+    
+    // Check if courses array exists in the response
+    if (Array.isArray(response.data)) {
+      result = response.data
+    } else if (response.data.courses) {
+      result = response.data.courses
+    } else if (response.data.data) {
+      result = response.data.data
+    }
+    
+    console.log("Processed courses data:", result)
+    
+  } catch (error) {
+    console.error("GET_INSTRUCTOR_DASHBOARD_API ERROR:", error)
+    toast.error(error.message || "Failed to fetch instructor dashboard data")
+  }
+  return result || []
 }

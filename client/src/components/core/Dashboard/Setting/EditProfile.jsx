@@ -20,9 +20,21 @@ export default function EditProfile() {
 
   const submitProfileForm = async (data) => {
     try {
-      dispatch(updateProfile(token, data));
+      // Format the data to match the server's expected format
+      const formattedData = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        dateOfBirth: data.dateOfBirth, // Ensure this is in YYYY-MM-DD format
+        about: data.about,
+        contactNumber: data.contactNumber,
+        gender: data.gender
+      };
+      
+      console.log('Submitting profile data:', formattedData);
+      await dispatch(updateProfile(token, formattedData));
     } catch (error) {
-      console.log("ERROR MESSAGE - ", error.message);
+      console.error("Error updating profile:", error);
+      toast.error(error.message || "Failed to update profile");
     }
   };
 

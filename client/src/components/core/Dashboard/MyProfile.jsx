@@ -35,11 +35,12 @@ const MyProfile = () => {
                 <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
                     <div className='flex items-center gap-3 w-full sm:w-auto'>
                         {/* Profile Picture */}
-                        <div className='relative w-12 h-12 '>
+                        <div className='relative w-[78px] h-[78px] rounded-full overflow-hidden'>
                             <img
-                                src={user?.image ? user.image : "/default-avatar.png"} // 👈 sirf Redux ka user.image
+                                src={user?.image ? user.image : "/default-avatar.png"}
                                 alt={`profile-${user?.firstName}`}
-                                className="w-[78px] rounded-full object-cover"
+                                className="w-full h-full object-cover select-none"
+                                draggable={false}
                             />
 
 

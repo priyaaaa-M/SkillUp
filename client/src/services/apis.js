@@ -1,5 +1,13 @@
-export const BASE_URL = import.meta.env.VITE_BASE_URL;
+// In client/src/services/apis.js
+export const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:4000/api/v1";
 
+// PAYMENT ENDPOINTS
+export const paymentEndpoints = {
+  CREATE_PAYMENT_INTENT: BASE_URL + "/payment/create-payment-intent",
+  VERIFY_PAYMENT: BASE_URL + "/payment/verify-payment",
+  SAVE_PAYMENT_DETAILS: BASE_URL + "/payment/save-payment-details",
+  GET_PAYMENT_HISTORY: BASE_URL + "/payment/payment-history",
+};
 
 // AUTH ENDPOINTS
 export const endpoints = {
@@ -8,21 +16,26 @@ export const endpoints = {
   LOGIN_API: BASE_URL + "/auth/login",
   RESETPASSTOKEN_API: BASE_URL + "/auth/reset-password-token",
   RESETPASSWORD_API: BASE_URL + "/auth/reset-password",
-}
+  ...paymentEndpoints,  // Now this will work as paymentEndpoints is defined above
+};
 
 // PROFILE ENDPOINTS
 export const profileEndpoints = {
   GET_USER_DETAILS_API: BASE_URL + "/profile/getUserDetails",
   GET_USER_ENROLLED_COURSES_API: BASE_URL + "/profile/getEnrolledCourses",
-}
+  GET_INSTRUCTOR_DASHBOARD_API: BASE_URL + "/profile/instructorDashboard",
+};
 
 // STUDENTS ENDPOINTS
 export const studentEndpoints = {
   COURSE_PAYMENT_API: BASE_URL + "/payment/capturePayment",
   COURSE_VERIFY_API: BASE_URL + "/payment/verifyPayment",
   SEND_PAYMENT_SUCCESS_EMAIL_API: BASE_URL + "/payment/sendPaymentSuccessEmail",
+  ENROLL_COURSES: BASE_URL + "/profile/enroll-courses",
+  CHECK_ENROLLED_COURSES: BASE_URL + "/profile/check-enrolled-courses",
 }
 
+// COURSE ENDPOINTS
 // COURSE ENDPOINTS
 export const courseEndpoints = {
   GET_ALL_COURSE_API: BASE_URL + "/course/getAllCourses",
@@ -46,10 +59,19 @@ export const courseEndpoints = {
 
 // RATINGS AND REVIEWS
 export const ratingsEndpoints = {
-  REVIEWS_DETAILS_API: BASE_URL + "/course/getReviews",
+  REVIEWS_DETAILS_API: BASE_URL + "/course/getAverageRating",
+  GET_ALL_REVIEWS: BASE_URL + "/course/getAllReviews",
 }
 
-// CATAGORIES API
+// CART ENDPOINTS
+export const cart = {
+  GET_CART_API: BASE_URL + "/cart/get-cart",
+  ADD_TO_CART_API: BASE_URL + "/cart/add-to-cart",
+  REMOVE_FROM_CART_API: BASE_URL + "/cart/remove-from-cart",
+  CLEAR_CART_API: BASE_URL + "/cart/clear-cart",
+}
+
+// CATEGORIES API
 export const categories = {
   CATEGORIES_API: BASE_URL + "/course/showAllCategories",
 }
@@ -70,3 +92,12 @@ export const settingsEndpoints = {
   CHANGE_PASSWORD_API: BASE_URL + "/auth/changepassword",
   DELETE_PROFILE_API: BASE_URL + "/profile/deleteProfile",
 }
+
+// NOTES API
+export const notes = {
+  CREATE_NOTE: BASE_URL + "/notes",
+  GET_NOTES: BASE_URL + "/notes",
+  UPDATE_NOTE: BASE_URL + "/notes",
+  DELETE_NOTE: BASE_URL + "/notes",
+}
+
