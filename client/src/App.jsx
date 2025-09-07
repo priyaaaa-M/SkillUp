@@ -58,98 +58,100 @@ function App() {
       
       <div className="flex-1">
         <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="catalog/:catalogName" element={<Catalog />} />
-        <Route path="course/:courseId" element={<CourseDetails />} />
-        <Route
-          path="signup"
-          element={
-            <OpenRoute>
-              <Signup />
-            </OpenRoute>
-          }
-        />
-        <Route
-          path="login"
-          element={
-            <OpenRoute>
-              <Login />
-            </OpenRoute>
-          }
-        />
-        <Route
-          path="forgot-password"
-          element={
-            <OpenRoute>
-              <ForgotPassword />
-            </OpenRoute>
-          }
-        />
-        <Route
-          path="verify-email"
-          element={
-            <OpenRoute>
-              <VerifyEmail />
-            </OpenRoute>
-          }
-        />
-        <Route
-          path="update-password/:id"
-          element={
-            <OpenRoute>
-              <UpdatePassword />
-            </OpenRoute>
-          }
-        />
-        <Route path="about" element={<About />} />
-        <Route path="contact" element={<Contact />} />
+          {/* Public routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="catalog/:catalogName" element={<Catalog />} />
+          <Route path="course/:courseId" element={<CourseDetails />} />
+          
+          <Route
+            path="signup"
+            element={
+              <OpenRoute>
+                <Signup />
+              </OpenRoute>
+            }
+          />
+          <Route
+            path="login"
+            element={
+              <OpenRoute>
+                <Login />
+              </OpenRoute>
+            }
+          />
+          <Route
+            path="forgot-password"
+            element={
+              <OpenRoute>
+                <ForgotPassword />
+              </OpenRoute>
+            }
+          />
+          <Route
+            path="verify-email"
+            element={
+              <OpenRoute>
+                <VerifyEmail />
+              </OpenRoute>
+            }
+          />
+          <Route
+            path="update-password/:id"
+            element={
+              <OpenRoute>
+                <UpdatePassword />
+              </OpenRoute>
+            }
+          />
+          <Route path="about" element={<About />} />
+          <Route path="contact" element={<Contact />} />
 
-        {/* Private routes */}
-        <Route element={<PrivateRoute><Dashboard /></PrivateRoute>}>
-          {/* Dashboard Routes */}
-          <Route path="dashboard/my-profile" element={<MyProfile />} />
-          <Route path="dashboard/settings" element={<Settings />} />
+          {/* Private dashboard routes */}
+          <Route
+            path="dashboard"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          >
+            {/* Common routes */}
+            <Route path="my-profile" element={<MyProfile />} />
+            <Route path="settings" element={<Settings />} />
 
-          {/* Student specific routes */}
-          {user?.accountType === ACCOUNT_TYPE.STUDENT && (
-            <>
-             
-              <Route path="dashboard/cart" element={<Cart />} />
-              <Route path="dashboard/enrolled-courses" element={<EnrolledCourses />} />
-              <Route path="dashboard/Personal-Notes" element={<NotesPage />} />
-              <Route path="dashboard/Personal-Notes/new" element={<NoteEditor />} />
-              <Route path="dashboard/Personal-Notes/:noteId" element={<NoteEditor />} />
-            </>
-          )}
+            {/* Student routes */}
+            {user?.accountType === ACCOUNT_TYPE.STUDENT && (
+              <>
+                <Route path="cart" element={<Cart />} />
+                <Route path="enrolled-courses" element={<EnrolledCourses />} />
+                <Route path="Personal-Notes" element={<NotesPage />} />
+                <Route path="Personal-Notes/new" element={<NoteEditor />} />
+                <Route path="Personal-Notes/:noteId" element={<NoteEditor />} />
+              </>
+            )}
 
-          {/* Instructor specific routes */}
-          {user?.accountType === ACCOUNT_TYPE.INSTRUCTOR && (
-            <>
-             <Route path="dashboard/instructor" element={<Instructor/>} />
-              <Route path="dashboard/add-course" element={<AddCourse />} />
-              <Route path="dashboard/my-courses" element={<MyCourses />} />
-              <Route path="dashboard/edit-course/:courseId" element={<EditCourse />} />
-            </>
-          )}
-        </Route>
+            {/* Instructor routes */}
+            {user?.accountType === ACCOUNT_TYPE.INSTRUCTOR && (
+              <>
+                <Route path="instructor" element={<Instructor />} />
+                <Route path="add-course" element={<AddCourse />} />
+                <Route path="my-courses" element={<MyCourses />} />
+                <Route path="edit-course/:courseId" element={<EditCourse />} />
+              </>
+            )}
+          </Route>
 
-        {/* Course viewing route - accessible to all authenticated users */}
-        <Route 
-          path="view-course/:courseId/section/:sectionId/sub-section/:subSectionId"
-          element={
-            <PrivateRoute>
-              <ViewCourse />
-            </PrivateRoute>
-          }
-        />
+          {/* Course viewing route - accessible to all authenticated users */}
+          <Route 
+            path="view-course/:courseId/section/:sectionId/sub-section/:subSectionId"
+            element={
+              <PrivateRoute>
+                <ViewCourse />
+              </PrivateRoute>
+            }
+          />
 
-           
-                  
-
-
-
-            {/* 404 fallback */}
+          {/* 404 fallback */}
           <Route path="*" element={<Error />} />
         </Routes>
       </div>
@@ -157,4 +159,4 @@ function App() {
   )
 }
 
-export default App;
+export default App

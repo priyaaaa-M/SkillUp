@@ -1,7 +1,7 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import IconBtn from '../../common/IconsButton'
+import IconBtn from '../../common/IconBtn'
 
 import {
     FaStar,

@@ -10,7 +10,7 @@ import {
     deleteSubSection,
 } from "../../../../../services/operations/courseDetailsAPI"
 import { setCourse } from "../../../../../slices/courseSlice"
-import IconBtn from "../../../../common/IconsButton"
+import IconBtn from "../../../../common/IconBtn"
 import Upload from "../Upload"
 
 export default function SubSectionModal({
@@ -232,7 +232,7 @@ export default function SubSectionModal({
                             <div className="flex gap-4">
                                 <button
                                     type="button"
-                                    onClick={() => setModalData(null)}
+                                    onClick={() => odalData(null)}
                                     className="flex items-center rounded-lg px-5 py-2.5 text-richblack-5 bg-richblack-600 hover:bg-richblack-500 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled={loading}
                                 >
