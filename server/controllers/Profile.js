@@ -299,7 +299,7 @@ exports.instructorDashboard = async (req, res) => {
         thumbnail: course.thumbnail || '',
         status: course.status || 'Draft',
         instructor: course.instructor,
-        studentsEnrolled: studentsEnrolled, // Include actual student references
+        studentsEnrolled: studentsEnrolled, 
         totalStudentsEnrolled,
         totalAmountGenerated,
         createdAt: course.createdAt,
