@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 // Import the SubSection model to ensure it's loaded
-require("./SubSection");
+require("./Subsection");
 
 // Define the Section schema
 const sectionSchema = new mongoose.Schema({
