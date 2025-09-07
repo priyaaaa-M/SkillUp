@@ -18,7 +18,12 @@ const SubSectionSchema = new mongoose.Schema({
     videoUrl: { 
         type: String,
         required: true
-    },
+    }
 }, { timestamps: true });
 
-module.exports = mongoose.model("SubSection", SubSectionSchema);
+// Check if the model has already been defined
+if (mongoose.models.SubSection) {
+  module.exports = mongoose.model("SubSection");
+} else {
+  module.exports = mongoose.model("SubSection", SubSectionSchema);
+}

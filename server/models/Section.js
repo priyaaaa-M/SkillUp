@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 // Import the SubSection model to ensure it's loaded
-require("./Subsection");
+require("./SubSection");
 
 // Define the Section schema
 const sectionSchema = new mongoose.Schema({
@@ -20,4 +20,9 @@ const sectionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Export the Section model
-module.exports = mongoose.model("Section", sectionSchema);
+// Check if the model has already been defined
+if (mongoose.models.Section) {
+  module.exports = mongoose.model("Section");
+} else {
+  module.exports = mongoose.model("Section", sectionSchema);
+}
