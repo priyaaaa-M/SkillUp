@@ -49,7 +49,7 @@ const {
   getAverageRating,
   getAllRatingReview,
   getAllReviews
-} = require("../controllers/RatingandReview");
+} = require("../controllers/RatingAndReview");
 const {
   updateCourseProgress,
   getProgressPercentage,
@@ -114,10 +114,9 @@ router.post("/update-purchased-together", auth, isAdmin, async (req, res) => {
   }
 });
 
-// ********************************************************************************************************
+
 //                                      Category routes (Only by Admin)
-// ********************************************************************************************************
-// Category can Only be Created by Admin
+
 // TODO: Put IsAdmin Middleware here
 router.post("/createCategory", auth, isAdmin, createCategory)
 router.get("/showAllCategories", showAllCategories)
@@ -126,9 +125,9 @@ router.route("/getCategoryPageDetails")
   .get(categoryPageDetails)
   .post(categoryPageDetails)
 
-// ********************************************************************************************************
+
 //                                      Rating and Review
-// ********************************************************************************************************
+
 router.post("/createRating", auth, isStudent, createRating);
 router.get("/getAverageRating", getAverageRating);
 router.get("/getAllReviews", getAllReviews);

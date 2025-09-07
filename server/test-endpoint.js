@@ -1,6 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const RatingAndReview = require('./models/RatingAndRaview');
+const RatingAndReview = require('./models/RatingAndReview');
 
 async function testEndpoint() {
   try {
