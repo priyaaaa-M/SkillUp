@@ -45,10 +45,10 @@ const whitelist = [
   'http://localhost:3000',
   'http://localhost:5173',
   'https://skillup-0cox.onrender.com',
-  'https://skillup.netlify.app',
-  'https://skillup.netlify.app/*',
-  'https://skillup.netlify.app/api/v1/*',
-  'https://skillup.netlify.app/api/v1'
+  'https://skill-up-priya6.vercel.app',
+  'https://skill-up-priya6.vercel.app/*',
+  'https://skill-up-priya6.vercel.app/api/v1/*',
+  'https://skill-up-priya6.vercel.app/api/v1'
 ];
 
 const corsOptions = {
