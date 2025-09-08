@@ -71,6 +71,7 @@ export const cart = {
   CLEAR_CART_API: BASE_URL + "/cart/clear-cart",
 }
 
+
 // CATEGORIES API
 export const categories = {
   CATEGORIES_API: BASE_URL + "/course/showAllCategories",
