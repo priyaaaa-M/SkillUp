@@ -42,16 +42,20 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
 // CORS configuration
 const whitelist = [
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "https://skill-up-fawn-eight.vercel.app",
-  "https://skill-up-priya6.vercel.app",
-  "https://skill-up-git-main-priya6.vercel.app",
-  "https://skill-up-tan.vercel.app",
-  "https://skill-1b2lkjoqm-priya6.vercel.app",
-  "https://skillup-0cox.onrender.com"
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'https://skill-up-tan.vercel.app',
+  'https://skill-up-fawn-eight.vercel.app',
+  'https://skill-up-priya6.vercel.app',
+  'https://skill-up-git-main-priya6.vercel.app',
+  'https://skill-up-git-main-priya6.vercel.app',
+  'https://skillup-0cox.onrender.com',
+  'https://skill-up-priya6.vercel.app',
+  'https://skill-up-priya6.vercel.app/*',
+  'https://skill-up-priya6.vercel.app/api/v1/*',
+  'https://skill-up-priya6.vercel.app/api/v1'
 ];
-
 
 
 const corsOptions = {
