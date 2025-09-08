@@ -34,7 +34,7 @@ import CourseDetails from "./pages/CourseDetails"
 import ViewCourse from "./pages/ViewCourse"
 import VideoDetails from "./components/core/ViewCourses/VideoDetailsSidebar"
 import NotesPage from "./pages/dashboard/PersonalNotes"
-import NoteEditor from "./components/core/dashboard/NoteEditor"
+import NoteEditor from "./components/core/Dashboard/NoteEditor"
 
 import Instructor from "./components/core/InstructorDashboard/Instructor"
 
