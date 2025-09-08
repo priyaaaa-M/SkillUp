@@ -5,7 +5,7 @@ const app = express();
 const userRoutes = require("./routes/User");
 const profileRoutes = require("./routes/Profile");
 const courseRoutes = require("./routes/Course");
-const paymentRoutes = require("./routes/Payments");
+const paymentRoutes = require("./routes/payments");
 const cartRoutes = require("./routes/cart");
 const contactRoutes = require("./routes/contact");
 const noteRoutes = require("./routes/note");
@@ -44,10 +44,8 @@ app.use(cookieParser());
 const whitelist = [
   'http://localhost:3000',
   'http://localhost:5173',
-  'https://skillup-1-3m2l.onrender.com',
-  'https://skillup-1-3m2l.onrender.com/',
-  'https://skillup-1-3m2l.onrender.com/*',
-  'https://skillup-1-3m2l.onrender.com/*/*',
+  "https://skillup-0cox.onrender.com",
+ 
 ];
 
 const corsOptions = {
