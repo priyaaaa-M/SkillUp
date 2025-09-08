@@ -9,7 +9,7 @@ import { toast } from "react-hot-toast"
 import { createRating } from "../../../services/operations/courseDetailsAPI"
 import { getFullDetailsOfCourse } from "../../../services/operations/courseDetailsAPI"
 import { setEntireCourseData } from "../../../slices/viewCourseSlice"
-import IconBtn from "../../Common/IconBtn"
+import IconBtn from "../../common/IconBtn"
 
 export default function CourseReviewModal({ setReviewModal }) {
   const dispatch = useDispatch();
