@@ -5,7 +5,7 @@ const app = express();
 const userRoutes = require("./routes/User");
 const profileRoutes = require("./routes/Profile");
 const courseRoutes = require("./routes/Course");
-const paymentRoutes = require("./routes/Payments");
+const paymentRoutes = require("./routes/payments");
 const cartRoutes = require("./routes/cart");
 const contactRoutes = require("./routes/contact");
 const noteRoutes = require("./routes/note");
@@ -44,11 +44,11 @@ app.use(cookieParser());
 const whitelist = [
   'http://localhost:3000',
   'http://localhost:5173',
-	"https://skill-up-priya6.vercel.app",
-  "https://skill-up-fawn-eight.vercel.app",
-  "https://skill-3hu5xa4ih-priya6.vercel.app",
-  "https://skillup-0cox.onrender.com",
- 
+  'https://skillup-0cox.onrender.com',
+  'https://skillup.netlify.app',
+  'https://skillup.netlify.app/*',
+  'https://skillup.netlify.app/api/v1/*',
+  'https://skillup.netlify.app/api/v1'
 ];
 
 const corsOptions = {
@@ -56,17 +56,11 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // Check if the origin is in the whitelist or is a subdomain of whitelisted domains
-    const allowed = whitelist.some(allowedOrigin => {
-      return origin === allowedOrigin || 
-             origin.startsWith(allowedOrigin.replace(/\*$/, '')) ||
-             new URL(origin).hostname.endsWith(new URL(allowedOrigin).hostname);
-    });
-    
-    if (allowed) {
+    // Check if the origin is in the whitelist
+    if (whitelist.some(domain => origin === domain || origin.startsWith(domain.replace('/*', '')))) {
       callback(null, true);
     } else {
-      console.error('CORS Error: Not allowed by CORS', { origin, whitelist });
+      console.log('Blocked by CORS:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -75,7 +69,7 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
   exposedHeaders: ['set-cookie', 'token'],
   preflightContinue: false,
-  optionsSuccessStatus: 204,
+  optionsSuccessStatus: 204
 };
 
 // Apply CORS middleware
