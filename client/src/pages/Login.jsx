@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom"
 import { useEffect } from "react"
 import { useSelector } from "react-redux"
-import loginImg from "../../../assets/Images/login.png"
+import loginImg from "../../../assets/images/login.png"
 import Template from "../components/core/Auth/Template"
 
 function Login() {
