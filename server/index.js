@@ -44,6 +44,8 @@ app.use(cookieParser());
 const whitelist = [
   'http://localhost:3000',
   'http://localhost:5173',
+  "https://skill-up-fawn-eight.vercel.app",
+  "https://skill-3hu5xa4ih-priya6.vercel.app",
   "https://skillup-0cox.onrender.com",
  
 ];
