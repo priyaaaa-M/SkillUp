@@ -1,6 +1,6 @@
 import { toast } from "react-hot-toast";
 import { updateCompletedLectures } from "../../slices/viewCourseSlice";
-import { apiConnector } from "../apiConnector";
+import { apiConnector } from "../apiconnector";
 import { courseEndpoints, ratingsEndpoints } from "../apis";
 
 // Destructure all endpoint constants once
