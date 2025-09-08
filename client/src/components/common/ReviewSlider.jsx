@@ -17,7 +17,7 @@ import { FaStar, FaQuoteLeft } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
 // Get apiFunction and the endpoint
-import { apiConnector } from "../../services/apiConnector"
+import { apiConnector } from "../../services/apiconnector"
 import { ratingsEndpoints } from "../../services/apis"
 
 function ReviewSlider() {
