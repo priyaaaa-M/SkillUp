@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import { toast } from "react-hot-toast"
 
-import IconBtn from "../../Common/IconBtn"
+import IconBtn from "../../common/IconBtn"
 import { getAvgRating } from "../../../services/operations/courseDetailsAPI"
 
 const VideoDetailsSidebar = ({ setReviewModal }) => {
