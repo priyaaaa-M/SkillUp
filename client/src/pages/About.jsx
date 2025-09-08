@@ -3,7 +3,7 @@ import HighlightText from "../components/core/HomePage/HighlightText";
 import BannerImg1 from "../../../assets/images/aboutus1.png";
 import BannerImg2 from "../../../assets/images/aboutus2.png";
 import BannerImg3 from "../../../assets/images/aboutus3.png";
-import Code from "../components/core/AboutPage/Code";
+import Code from "../components/core/AboutPage/code";
 import FoundingStory from "../../../assets/images/FoundingStory.png"
 import StackComponent from "../components/core/AboutPage/StackComponent"
 import LearnGrid from "../components/core/AboutPage/LearnGrid"
