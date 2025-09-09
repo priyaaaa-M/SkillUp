@@ -1,5 +1,8 @@
 // In client/src/services/apis.js
-export const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:4000/api/v1";
+import { axiosInstance } from "./apiconnector";
+
+export const BASE_URL = axiosInstance.defaults.baseURL || "";
+console.log("Using BASE_URL:", BASE_URL);
 
 // PAYMENT ENDPOINTS
 export const paymentEndpoints = {
@@ -59,8 +62,10 @@ export const courseEndpoints = {
 
 // RATINGS AND REVIEWS
 export const ratingsEndpoints = {
-  REVIEWS_DETAILS_API: BASE_URL + "/course/getAverageRating",
-  GET_ALL_REVIEWS: BASE_URL + "/course/getAllReviews",
+  GET_AVERAGE_RATING: (courseId) => `${BASE_URL}/ratings/average-rating/${courseId}`,
+  GET_REVIEWS_BY_COURSE: (courseId) => `${BASE_URL}/ratings/reviews/${courseId}`,
+  CREATE_RATING: BASE_URL + "/ratings/create",
+  GET_ALL_RATINGS: BASE_URL + "/ratings/all"
 }
 
 // CART ENDPOINTS
@@ -96,9 +101,9 @@ export const settingsEndpoints = {
 
 // NOTES API
 export const notes = {
-  CREATE_NOTE: BASE_URL + "/notes",
-  GET_NOTES: BASE_URL + "/notes",
-  UPDATE_NOTE: BASE_URL + "/notes",
-  DELETE_NOTE: BASE_URL + "/notes",
+  CREATE_NOTE: BASE_URL + "/note",
+  GET_NOTES: BASE_URL + "/note",
+  UPDATE_NOTE: BASE_URL + "/note",
+  DELETE_NOTE: BASE_URL + "/note",
 }
 
