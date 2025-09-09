@@ -35,13 +35,6 @@ export const studentEndpoints = {
   CHECK_ENROLLED_COURSES: BASE_URL + "/profile/check-enrolled-courses",
 }
 
-// RATINGS AND REVIEWS
-export const ratingsEndpoints = {
-  GET_AVERAGE_RATING: (courseId) => `${BASE_URL}/ratings/average-rating/${courseId}`,
-  GET_REVIEWS_BY_COURSE: (courseId) => `${BASE_URL}/ratings/reviews/${courseId}`,
-  CREATE_RATING: BASE_URL + "/ratings/create",
-  GET_ALL_RATINGS: BASE_URL + "/ratings/all"
-}
 
 // COURSE ENDPOINTS
 // COURSE ENDPOINTS
