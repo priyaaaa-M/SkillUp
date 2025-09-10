@@ -1,7 +1,14 @@
 // Importing necessary modules and packages
+require('dotenv').config();
 const express = require("express");
 const mongoose = require("mongoose");
 const app = express();
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
+const fileUpload = require("express-fileupload");
+const { cloudinaryConnect } = require("./config/cloudinary");
+
+// Import routes
 const userRoutes = require("./routes/User");
 const profileRoutes = require("./routes/Profile");
 const courseRoutes = require("./routes/Course");
@@ -9,28 +16,21 @@ const paymentRoutes = require("./routes/Payments");
 const cartRoutes = require("./routes/cart");
 const contactRoutes = require("./routes/contact");
 const noteRoutes = require("./routes/note");
+
+// Import database connection
 const database = require("./config/database");
-const cookieParser = require("cookie-parser");
-const cors = require("cors");
-const { cloudinaryConnect } = require("./config/cloudinary");
-const fileUpload = require("express-fileupload");
-const dotenv = require("dotenv");
 
 // Setting up port number
 const PORT = process.env.PORT || 4000;
 
-// Loading environment variables from .env file
-dotenv.config();
+// First, require all models to ensure they're registered
+console.log('Registering models...');
+require('./models/index');
+console.log('Registered models:', mongoose.modelNames());
 
-// Connecting to database
+// Initialize database connection
+console.log('Initializing database connection...');
 database.connect();
-
-// Debug: Log MongoDB models
-console.log('MongoDB Models:', mongoose.modelNames());
-
-// Import Contact model to ensure it's registered
-require('./models/Contact');
-console.log('After requiring Contact model:', mongoose.modelNames());
 
 // Middlewares
 app.use((req, res, next) => {

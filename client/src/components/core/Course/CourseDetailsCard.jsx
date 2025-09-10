@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import copy from "copy-to-clipboard"
 import { toast } from "react-hot-toast"
 import { BsCheckCircle, BsFillPlayCircleFill } from "react-icons/bs"
@@ -27,6 +27,7 @@ const formatDuration = (seconds) => {
 };
 
 function CourseDetailsCard({ course, setConfirmationModal, handleBuyCourse, totalLectures, totalDuration, isEnrolled }) {
+    const [isNavigating, setIsNavigating] = useState(false);
     const { user } = useSelector((state) => state.profile)
     const { token } = useSelector((state) => state.auth)
     const navigate = useNavigate()
@@ -95,7 +96,41 @@ function CourseDetailsCard({ course, setConfirmationModal, handleBuyCourse, tota
         }
     }
 
-    const isUserEnrolled = isEnrolled || (user && course?.studentsEnroled.includes(user?._id))
+    // Check if user is enrolled either through the isEnrolled prop or by checking the studentsEnroled array
+  const isUserEnrolled = isEnrolled || 
+    (user && Array.isArray(course?.studentsEnroled) && 
+      course.studentsEnroled.some(student => 
+        typeof student === 'string' ? student === user?._id : student?._id === user?._id
+      )
+    )
+    
+  // Handle both purchase and continue learning actions
+  const handleAction = async () => {
+    if (isUserEnrolled) {
+      // If already enrolled, navigate to the first lesson
+      try {
+        setIsNavigating(true);
+        // Find the first section with subsections
+        const firstSection = course.courseContent?.find(section => 
+          section?.subSection?.length > 0
+        );
+        
+        if (firstSection?.subSection?.[0]?._id) {
+          navigate(`/view-course/${course._id}/section/${firstSection._id}/sub-section/${firstSection.subSection[0]._id}`);
+        } else {
+          toast.error('No lessons available in this course yet');
+        }
+      } catch (error) {
+        console.error('Error navigating to course:', error);
+        toast.error('Failed to load course content');
+      } finally {
+        setIsNavigating(false);
+      }
+    } else {
+      // If not enrolled, proceed with purchase flow
+      handleBuyCourse();
+    }
+  };
 
     return (
         <div className="flex flex-col gap-6 rounded-2xl bg-richblack-800 p-6 border border-richblack-700 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_6px_25px_rgba(255,255,255,0.05)] transition-all duration-300 sticky top-24 transform hover:-translate-y-1">
@@ -127,23 +162,41 @@ function CourseDetailsCard({ course, setConfirmationModal, handleBuyCourse, tota
                 </div>
                 
                 <div className="flex flex-col gap-3">
-                    <button
-                        className={`w-full py-3 rounded-lg font-bold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-95 ${
-                            isUserEnrolled 
-                            ? 'bg-caribbeangreen-400 text-richblack-900 hover:bg-caribbeangreen-300 flex items-center justify-center gap-2'
-                            : 'bg-yellow-50 text-richblack-900 hover:bg-yellow-100'
-                        }`}
-                        onClick={isUserEnrolled ? handleBuyCourse : handleBuyCourse}
-                    >
-                        {isUserEnrolled ? (
-                            <>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                                </svg>
-                                Continue Learning
-                            </>
-                        ) : 'Buy Now'}
-                    </button>
+                    {isUserEnrolled ? (
+                        <button
+                            onClick={handleAction}
+                            disabled={isNavigating}
+                            className={`w-full py-3 rounded-lg font-bold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-95 ${
+                                isNavigating 
+                                    ? 'bg-caribbeangreen-300 cursor-not-allowed' 
+                                    : 'bg-caribbeangreen-400 hover:bg-caribbeangreen-300'
+                            } text-richblack-900 flex items-center justify-center gap-2`}
+                        >
+                            {isNavigating ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-richblack-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Loading...
+                                </>
+                            ) : (
+                                <>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                    </svg>
+                                    Continue Learning
+                                </>
+                            )}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleBuyCourse}
+                            className="w-full py-3 rounded-lg font-bold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-95 bg-yellow-50 text-richblack-900 hover:bg-yellow-100"
+                        >
+                            Buy Now
+                        </button>
+                    )}
                     
                     {!isUserEnrolled && (
                         <button 

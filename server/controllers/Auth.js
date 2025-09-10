@@ -50,10 +50,10 @@ exports.signup = async (req, res) => {
 
     // Trim and validate password length
     const trimmedPassword = password.trim();
-    if (trimmedPassword.length < 8) {
+    if (trimmedPassword.length < 4) {
       return res.status(400).json({
         success: false,
-        message: "Password must be at least 8 characters long",
+        message: "Password must be at least 4 characters long",
       })
     }
 
@@ -68,24 +68,47 @@ exports.signup = async (req, res) => {
 
     // Find the most recent OTP for the email
     const response = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1).lean()
-    console.log('🔍 OTP Verification:', { 
-      email,
-      foundDocuments: response.length,
-      submittedOTP: otp,
-      storedOTP: response[0]?.otp,
-    });
+    
+    // Trim and ensure both OTPs are strings for comparison
+    const submittedOtp = String(otp).trim();
+    const storedOtp = response[0]?.otp ? String(response[0].otp).trim() : null;
+    
+    // Commented out OTP verification logging
+    // console.log('🔍 OTP Verification:', { 
+    //   email,
+    //   foundDocuments: response.length,
+    //   submittedOTP: submittedOtp,
+    //   storedOTP: storedOtp,
+    //   match: submittedOtp === storedOtp,
+    //   timestamp: new Date().toISOString()
+    // });
 
-    if (response.length === 0) {
+    if (response.length === 0 || !storedOtp) {
       // OTP not found for the email
       return res.status(400).json({
         success: false,
-        message: "The OTP is not valid",
+        message: "No OTP found for this email. Please request a new OTP.",
       })
-    } else if (otp !== response[0].otp) {
+    } 
+    
+    // Check if OTP is expired (5 minutes)
+    const otpAge = Date.now() - new Date(response[0].createdAt).getTime();
+    const OTP_VALID_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+    
+    if (otpAge > OTP_VALID_DURATION) {
+      // Delete expired OTP
+      await OTP.findByIdAndDelete(response[0]._id);
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired. Please request a new one.",
+      })
+    }
+    
+    if (submittedOtp !== storedOtp) {
       // Invalid OTP
       return res.status(400).json({
         success: false,
-        message: "The OTP is not valid",
+        message: "The OTP you entered is incorrect. Please try again.",
       })
     }
 
@@ -250,7 +273,7 @@ exports.sendotp = async (req, res) => {
       }
     } while (otpExists);
 
-    console.log("OTP", generatedOtp);
+    //console.log("OTP", generatedOtp);
 
     // Delete any existing OTPs for this email
     await OTP.deleteMany({ email });
@@ -258,7 +281,7 @@ exports.sendotp = async (req, res) => {
     // Create new OTP
     const otpPayload = { email, otp: generatedOtp };
     const otpBody = await OTP.create(otpPayload);
-    console.log("OTP Body", otpBody);
+    //console.log("OTP Body", otpBody);
 
     // FIXED: Do not return OTP in production response - only for development/debug
     const responseData = {

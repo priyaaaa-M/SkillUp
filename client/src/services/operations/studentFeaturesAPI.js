@@ -163,15 +163,36 @@ async function verifyPayment(bodyData, token, navigate, dispatch) {
             throw new Error(response.data.message || 'Payment verification failed')
         }
 
-        toast.success("Payment Successful. You are being redirected to the courses page.")
-        dispatch(resetCart())
-        navigate("/dashboard/enrolled-courses")
+        // Show success message with a delay before redirecting
+        toast.success("Payment Successful! Redirecting to your courses...", {
+            duration: 2000 // Show for 2 seconds
+        });
+        
+        // Reset cart and wait a bit before redirecting
+        dispatch(resetCart());
+        
+        // Add a small delay to ensure the user sees the success message
+        setTimeout(() => {
+            // Only navigate if we're still on the same page
+            if (window.location.pathname.includes('course/')) {
+                navigate("/dashboard/enrolled-courses", { 
+                    replace: true,
+                    state: { paymentSuccess: true }
+                });
+            }
+        }, 1500);
+        
     } catch (error) {
-        console.log("PAYMENT VERIFY ERROR............", error)
-        toast.error("Could Not Verify Payment.")
+        console.log("PAYMENT VERIFY ERROR............", error);
+        toast.error(error.message || "Could not verify payment. Please check your enrolled courses.");
+        // Don't navigate on error, keep user on the current page
+    } finally {
+        // Always dismiss the loading state, even on error
+        setTimeout(() => {
+            toast.dismiss(toastId);
+            dispatch(setPaymentLoading(false));
+        }, 500);
     }
-    toast.dismiss(toastId)
-    dispatch(setPaymentLoading(false))
 }
 
 // Send the Payment Success Email

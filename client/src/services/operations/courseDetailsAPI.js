@@ -58,53 +58,102 @@ export const getAllCourses = async () => {
     return result
 }
 
+// Helper function to create a consistent error object
+const createError = (message, originalError = null) => {
+  return {
+    success: false,
+    message: message,
+    error: originalError ? (originalError.message || String(originalError)) : message,
+    data: null,
+    originalError: process.env.NODE_ENV === 'development' ? originalError : undefined
+  };
+};
+
 export const fetchCourseDetails = async (courseId) => {
-    console.log('fetchCourseDetails called with courseId:', courseId);
-    const toastId = toast.loading("Loading...");
-    let result = { success: false, message: 'Unknown error occurred' };
+  console.log('fetchCourseDetails called with courseId:', courseId);
+  const toastId = toast.loading("Loading course details...");
+  
+  try {
+    // Validate courseId
+    if (!courseId || typeof courseId !== 'string' || courseId.trim() === '') {
+      const error = new Error('Invalid course ID provided');
+      console.error('Validation error:', error.message);
+      throw error;
+    }
+
+    const trimmedCourseId = courseId.trim();
+    console.log('Making API call to:', COURSE_DETAILS_API, 'with courseId:', trimmedCourseId);
     
-    try {
-        if (!courseId) {
-            throw new Error('No course ID provided');
-        }
+    const response = await apiConnector("POST", COURSE_DETAILS_API, {
+      courseId: trimmedCourseId,
+    });
+    
+    console.log("API Response:", {
+      status: response?.status,
+      hasData: !!response?.data,
+      success: response?.data?.success
+    });
 
-        console.log('Making API call to:', COURSE_DETAILS_API);
-        const response = await apiConnector("POST", COURSE_DETAILS_API, {
-            courseId,
-        });
-        
-        console.log("COURSE_DETAILS_API API RESPONSE............", response);
+    // Handle no response
+    if (!response) {
+      throw new Error('No response received from server');
+    }
 
-        if (!response) {
-            throw new Error('No response from server');
-        }
+    // Handle network errors or non-2xx responses
+    if (response.status && (response.status < 200 || response.status >= 300)) {
+      throw new Error(response.data?.message || `Request failed with status ${response.status}`);
+    }
 
-        if (!response.data) {
-            throw new Error('No data in response');
-        }
+    // Handle no data in response
+    if (!response.data) {
+      throw new Error('No data received in response');
+    }
 
-        if (!response.data.success) {
-            throw new Error(response.data.message || 'Failed to fetch course details');
-        }
-        
-        console.log('Course details fetched successfully');
-        result = { ...response.data, success: true };
-        
-    } catch (error) {
-        console.error("COURSE_DETAILS_API API ERROR............", error);
-        result = { 
-            success: false, 
-            message: error.response?.data?.message || error.message || 'Failed to fetch course details',
-            error: error.toString()
-        };
-        toast.error(result.message);
-    } finally {
-        toast.dismiss(toastId);
+    // Handle API error responses
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to fetch course details');
+    }
+
+    // Ensure we have the expected data structure
+    if (!response.data.data || !response.data.data.courseDetails) {
+      console.error('Unexpected API response structure:', response.data);
+      throw new Error('Invalid course data received from server');
+    }
+
+    console.log('Course details fetched successfully');
+    return {
+      success: true,
+      data: response.data.data,
+      message: response.data.message || 'Course details fetched successfully'
+    };
+    
+  } catch (error) {
+    console.error("Error in fetchCourseDetails:", {
+      message: error?.message,
+      status: error?.response?.status,
+      data: error?.response?.data,
+      stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+    });
+    
+    // Create a consistent error response
+    const errorResponse = createError(
+      error?.response?.data?.message || 
+      error?.message || 
+      'Failed to load course details. Please try again later.',
+      error
+    );
+    
+    // Show error toast (except for 404s which are handled by the component)
+    if (!error?.response || error.response.status !== 404) {
+      toast.error(errorResponse.message);
     }
     
-    console.log('fetchCourseDetails result:', result);
-    return result;
-}
+    return errorResponse;
+    
+  } finally {
+    toast.dismiss(toastId);
+  }
+};
 
 // fetching the available course categories
 export const fetchCourseCategories = async () => {

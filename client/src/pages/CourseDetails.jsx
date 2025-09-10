@@ -55,23 +55,26 @@ class ErrorBoundary extends Component {
 
 function CourseDetails() {
   console.log('Rendering CourseDetails component')
+  
+  // React Router hooks
   const navigate = useNavigate()
+  const { courseId } = useParams()
+  
+  // Redux hooks
   const dispatch = useDispatch()
-  const { user } = useSelector((state) => state.profile)
+  const { user, loading: profileLoading } = useSelector((state) => state.profile)
   const { token } = useSelector((state) => state.auth)
-  const { loading } = useSelector((state) => state.profile)
   const { paymentLoading } = useSelector((state) => state.course)
   
-  console.log('Redux state:', { user, token, loading, paymentLoading })
-
-  // Getting courseId from url parameter
-  const { courseId } = useParams()
-
-  // Declare states for course details, loading, and error
+  // Component state - all hooks must be called unconditionally at the top level
+  const [isNavigating, setIsNavigating] = useState(false);
   const [response, setResponse] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [confirmationModal, setConfirmationModal] = useState(null)
+  const [avgReviewCount, setAvgReviewCount] = useState(0)
+  const [isActive, setIsActive] = useState([])
+  const [totalNoOfLectures, setTotalNoOfLectures] = useState(0)
 
   useEffect(() => {
     console.log('useEffect triggered, courseId:', courseId);
@@ -158,14 +161,17 @@ function CourseDetails() {
     };
   }, [courseId]);
 
-  // Calculating Avg Review count
-  const [avgReviewCount, setAvgReviewCount] = useState(0)
+  // Calculate average review count when response changes
   useEffect(() => {
-    const count = GetAvgRating(response?.data?.courseDetails.ratingAndReviews)
-    setAvgReviewCount(count)
+    console.log('Response in CourseDetails:', response);
+    console.log('Enrollment count debug - response?.data:', response?.data);
+    console.log('Enrollment count debug - response?.data?.courseDetails:', response?.data?.courseDetails);
+    
+    if (response?.data?.courseDetails?.ratingAndReviews) {
+      const count = GetAvgRating(response.data.courseDetails.ratingAndReviews)
+      setAvgReviewCount(count)
+    }
   }, [response])
-
-  const [isActive, setIsActive] = useState([]);
   
   // Calculate total duration of a section from its subsections
   const calculateSectionDuration = (subsections = []) => {
@@ -229,28 +235,32 @@ function CourseDetails() {
   }, [response?.data?.courseDetails?.courseContent])
 
   const handleActive = (id) => {
-    setIsActive(
-      !isActive.includes(id)
-        ? isActive.concat([id])
-        : isActive.filter((e) => e != id)
-    )
+    setIsActive((prevActive) => {
+      // Ensure prevActive is always an array
+      const currentActive = Array.isArray(prevActive) ? prevActive : [];
+      return !currentActive.includes(id)
+        ? [...currentActive, id]
+        : currentActive.filter((e) => e !== id);
+    });
   }
 
-  // Total number of lectures
-  const [totalNoOfLectures, setTotalNoOfLectures] = useState(0)
+  // Calculate total number of lectures when response changes
   useEffect(() => {
-    let lectures = 0
-    response?.data?.courseDetails?.courseContent?.forEach((sec) => {
-      lectures += sec.subSection.length || 0
-    })
-    setTotalNoOfLectures(lectures)
+    if (response?.data?.courseDetails?.courseContent) {
+      const lectures = response.data.courseDetails.courseContent.reduce((total, sec) => {
+        return total + (sec.subSection?.length || 0);
+      }, 0);
+      setTotalNoOfLectures(lectures);
+    }
   }, [response])
 
-  console.log('Component render state:', { isLoading, loading, error, response })
+  console.log('Component render state:', { isLoading, profileLoading, error, response })
   
-  console.log('Render phase - state:', { isLoading, loading, error, response: !!response })
+  console.log('Render phase - state:', { isLoading, profileLoading, error, response: !!response })
   
-  if (isLoading || loading) {
+  const isLoadingState = isLoading || profileLoading;
+  
+  if (isLoadingState) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-richblack-900">
         <div className="flex flex-col items-center gap-4">
@@ -340,8 +350,10 @@ function CourseDetails() {
   } = response.data.courseDetails;
   
   // Check if current user is enrolled in the course
-  const isEnrolled = user?.courses?.some(course => course._id === course_id) || 
-                    studentsEnroled.some(student => student._id === user?._id);
+  const isEnrolled = user?.courses?.some(course => course?._id === course_id) || 
+                    (Array.isArray(studentsEnroled) && studentsEnroled.some(student => 
+                      typeof student === 'string' ? student === user?._id : student?._id === user?._id
+                    ));
   
   // Calculate total number of lectures
   const totalLectures = courseContent.reduce((acc, section) => {
@@ -359,11 +371,27 @@ function CourseDetails() {
   
   // Handle continue learning navigation
   const handleContinueLearning = () => {
-    const firstSection = courseContent[0];
-    const firstSubSection = firstSection?.subSection?.[0];
-    if (firstSection && firstSubSection) {
-      navigate(`/view-course/${course_id}/section/${firstSection._id}/sub-section/${firstSubSection._id}`);
+    if (!courseContent || courseContent.length === 0) {
+      toast.error('No course content available yet');
+      return;
     }
+
+    const firstSection = courseContent[0];
+    if (!firstSection?.subSection?.length) {
+      toast.error('No lessons available in this course yet');
+      return;
+    }
+
+    const firstSubSection = firstSection.subSection[0];
+    if (!firstSubSection?._id) {
+      toast.error('Unable to load the first lesson');
+      return;
+    }
+
+    setIsNavigating(true);
+    navigate(`/view-course/${course_id}/section/${firstSection._id}/sub-section/${firstSubSection._id}`, {
+      state: { from: 'course-details' }
+    });
   };
   
   // Track cart abandonment
@@ -426,11 +454,17 @@ function CourseDetails() {
     BuyCourse(token, [courseId], user, navigate, dispatch);
   };
   
+  // Show loading overlay instead of full page loader
   if (paymentLoading) {
     return (
-      <div className="grid min-h-[calc(100vh-3.5rem)] place-items-center bg-vscode-background">
-        <div className="spinner border-t-vscode-blue"></div>
-        <p className="mt-4 text-vscode-text">Processing payment...</p>
+      <div className="fixed inset-0 bg-black/70 z-50 flex flex-col items-center justify-center">
+        <div className="bg-richblack-800 p-8 rounded-xl max-w-md w-full mx-4">
+          <div className="flex flex-col items-center">
+            <div className="w-16 h-16 border-4 border-t-yellow-50 border-r-yellow-50 border-b-yellow-50 border-l-transparent rounded-full animate-spin mb-4"></div>
+            <h3 className="text-xl font-bold text-richblack-5 mb-2">Processing Payment</h3>
+            <p className="text-richblack-200 text-center">Please wait while we verify your payment. Do not close or refresh this page.</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -576,72 +610,80 @@ function CourseDetails() {
 
             {/* Course Sections */}
             <div className="border border-white/10 rounded-lg overflow-hidden">
-              {response?.data?.courseDetails?.courseContent?.map((course, index) => (
-                <div 
-                  key={index} 
-                  className={`transition-all duration-300 ${isActive.includes(course._id) ? 'bg-richblack-800' : 'bg-richblack-900'}`}
-                >
+              {response?.data?.courseDetails?.courseContent?.map((course, index) => {
+                const isActiveSection = Array.isArray(isActive) && isActive.includes(course._id);
+                return (
                   <div 
-                    className={`flex justify-between items-center p-4 cursor-pointer transition-colors duration-200 ${isActive.includes(course._id) ? 'bg-richblack-700/50' : 'hover:bg-richblack-800'}`}
-                    onClick={() => handleActive(course._id)}
+                    key={index} 
+                    className={`transition-all duration-300 ${isActiveSection ? 'bg-richblack-800' : 'bg-richblack-900'}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 flex items-center justify-center rounded-md transition-all duration-200 ${
-                        isActive.includes(course._id) 
-                          ? 'bg-yellow-50 text-richblack-900' 
-                          : 'bg-richblack-700 text-yellow-50'
-                      }`}>
-                        {isActive.includes(course._id) ? (
-                          <VscChevronDown className="w-5 h-5 transition-transform duration-200" />
-                        ) : (
-                          <VscChevronRight className="w-5 h-5 transition-transform duration-200" />
-                        )}
-                      </div>
-                      <h3 className="font-medium text-richblack-5">{course.sectionName}</h3>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-richblack-300 bg-richblack-700 px-2 py-1 rounded">
-                        {course.subSection.length} lectures
-                      </span>
-                      <span className="text-sm text-richblack-400">
-                        {formatDuration(calculateSectionDuration(course.subSection))}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div 
-                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                      isActive.includes(course._id) 
-                        ? 'max-h-[1000px] opacity-100' 
-                        : 'max-h-0 opacity-0'
-                    }`}
-                  >
-                    <div className="bg-richblack-900/50">
-                      {course.subSection.map((subSec, i) => (
-                        <div 
-                          key={i} 
-                          className="flex items-center p-3 pl-16 hover:bg-richblack-800/50 transition-colors duration-200 group"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/view-course/${course_id}/section/${course._id}/sub-section/${subSec._id}`);
-                          }}
-                        >
-                          <div className="w-8 h-8 flex items-center justify-center mr-3 group-hover:text-yellow-50 transition-colors">
-                            <VscPlayCircle className="w-5 h-5 text-richblack-400 group-hover:text-yellow-50 transition-colors" />
-                          </div>
-                          <span className="text-richblack-100 flex-1 group-hover:text-white transition-colors">
-                            {subSec.title}
-                          </span>
-                          <span className="text-sm text-richblack-400 group-hover:text-white transition-colors">
-                            {formatDuration(subSec.timeDuration)}
-                          </span>
+                    <div 
+                      className={`flex justify-between items-center p-4 cursor-pointer transition-colors duration-200 ${isActiveSection ? 'bg-richblack-700/50' : 'hover:bg-richblack-800'}`}
+                      onClick={() => handleActive(course._id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 flex items-center justify-center rounded-md transition-all duration-200 ${
+                          isActiveSection 
+                            ? 'bg-yellow-50 text-richblack-900' 
+                            : 'bg-richblack-700 text-yellow-50'
+                        }`}>
+                          {isActiveSection ? (
+                            <VscChevronDown className="w-5 h-5 transition-transform duration-200" />
+                          ) : (
+                            <VscChevronRight className="w-5 h-5 transition-transform duration-200" />
+                          )}
                         </div>
-                      ))}
+                        <h3 className="font-medium text-richblack-5">{course.sectionName}</h3>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-richblack-300 bg-richblack-700 px-2 py-1 rounded">
+                          {course.subSection.length} lectures
+                        </span>
+                        <span className="text-sm text-richblack-400">
+                          {formatDuration(calculateSectionDuration(course.subSection))}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div 
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                        isActiveSection 
+                          ? 'max-h-[1000px] opacity-100' 
+                          : 'max-h-0 opacity-0'
+                      }`}
+                    >
+                      <div className="bg-richblack-900/50">
+                        {course.subSection.map((subSec, i) => (
+                          <div 
+                            key={i} 
+                            className="flex items-center p-3 pl-16 hover:bg-richblack-800/50 transition-colors duration-200 group"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/view-course/${course_id}/section/${course._id}/sub-section/${subSec._id}`);
+                            }}
+                          >
+                            <div className="w-8 h-8 flex items-center justify-center mr-3 group-hover:text-yellow-50 transition-colors">
+                              <VscPlayCircle className="w-5 h-5 text-richblack-400 group-hover:text-yellow-50 transition-colors" />
+                            </div>
+                            <span className="text-richblack-100 flex-1 group-hover:text-white transition-colors">
+                              {subSec.title}
+                            </span>
+                            <span className="text-sm text-richblack-400 group-hover:text-white transition-colors">
+                              {formatDuration(subSec.timeDuration)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+
+            {/* Debug instructor stats */}
+            {console.log('API Response:', response)}
+            {console.log('Instructor:', instructor)}
+            {console.log('Course Details:', response?.data?.data?.courseDetails)}
 
             {/* Author Details - Compact */}
             <div className="mt-6 mb-4">
@@ -650,8 +692,8 @@ function CourseDetails() {
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0">
                     <img
-                      src={instructor?.image || 'https://api.dicebear.com/7.x/initials/svg?seed=Instructor'}
-                      alt="Instructor"
+                      src={instructor?.image || `https://api.dicebear.com/7.x/initials/svg?seed=${instructor?.firstName || 'Instructor'}`}
+                      alt={instructor?.firstName || 'Instructor'}
                       className="h-16 w-16 rounded-full object-cover border-2 border-yellow-50"
                     />
                   </div>
@@ -660,34 +702,21 @@ function CourseDetails() {
                       <h3 className="text-lg font-bold text-richblack-5 truncate">{`${instructor?.firstName || ''} ${instructor?.lastName || ''}`}</h3>
                       <p className="text-sm text-richblue-200 mb-2">{instructor?.additionalDetails?.designation || 'Instructor'}</p>
                       <div className="flex items-center gap-4 text-sm">
-                        <span className="flex items-center gap-1 text-yellow-50">
+                        <span className="flex items-center gap-1 text-yellow-50" title="Total courses by this instructor">
                           <span className="font-medium">
-                            {instructor?.courses?.length || 0}
+                            {response?.data?.instructorStats?.totalCourses || 0}
                           </span>
                           <span className="text-richblack-300">Courses</span>
                         </span>
                         <span className="w-px h-4 bg-richblack-600"></span>
-                        <span className="flex items-center gap-1 text-yellow-50" title="Students in this course">
+                        <span className="flex items-center gap-1 text-yellow-50" title="Total students across all courses">
                           <span className="font-medium">
-                            {studentsEnroled?.length || 0}
+                            {response?.data?.instructorStats?.totalStudents || 0}
                           </span>
                           <span className="text-richblack-300">
-                            Students
+                             Students
                           </span>
                         </span>
-                        {response?.data?.instructorStats?.totalStudents > 0 && (
-                          <>
-                            <span className="w-px h-4 bg-richblack-600"></span>
-                            <span className="flex items-center gap-1 text-yellow-50" title="Total students across all courses">
-                              <span className="font-medium">
-                                {response.data.instructorStats.totalStudents}
-                              </span>
-                              <span className="text-richblack-300">
-                                Total Students
-                              </span>
-                            </span>
-                          </>
-                        )}
                       </div>
                     </div>
                     
