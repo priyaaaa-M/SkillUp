@@ -213,12 +213,17 @@ exports.login = async (req, res) => {
       expires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
       httpOnly: true,
     }
-    res.cookie("token", token, options).status(200).json({
-      success: true,
-      token,
-      user,
-      message: `User Login Success`,
-    })
+   res.cookie("token", token, {
+  httpOnly: true,      
+  secure: true,         // Required if SameSite=None (works only over HTTPS)
+  sameSite: "None",     // Allow cross-site cookie usage
+  maxAge: 24 * 60 * 60 * 1000 // optional: cookie expiry (1 day)
+     }).status(200).json({
+  success: true,
+  token,
+  user,
+  message: "User Login Success",
+});
   } catch (error) {
     console.error("❌ Login error:", error)
     // Return 500 Internal Server Error status code with error message
